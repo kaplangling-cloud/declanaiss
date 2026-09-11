@@ -1,0 +1,606 @@
+// =====================================================================
+//  Declaration de naissance en ligne  -  Schema Prisma
+//  Principes :
+//   - Aucune suppression physique (soft delete + audit immuable)
+//   - Donnees sensibles (CNI, sante) chiffrees applicativement (AES-256-GCM)
+//   - Extensibilite : champ Json `donneesComplementaires` + `versionModele`
+//     permettent d'ajouter des champs sans migration destructive
+// =====================================================================
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["omitApi"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------
+// ENUMS
+// ---------------------------------------------------------------------
+
+enum Role {
+  PERSONNEL_SANTE // saisit et soumet une declaration (rattache a un centre)
+  CHEF_CENTRE // valide/soumet pour son centre, gere le personnel
+  OFFICIER_ETAT_CIVIL // mairie : recoit, valide/rejette, edite l'acte
+  SECRETAIRE_MAIRIE // mairie : assiste l'officier (lecture + preparation)
+  ADMIN_NATIONAL // supervision multi-centres, statistiques, audit
+}
+
+enum Sexe {
+  MASCULIN
+  FEMININ
+}
+
+enum ModeAccouchement {
+  VOIE_BASSE
+  CESARIENNE
+}
+
+enum TermeGrossesse {
+  A_TERME
+  PREMATURE
+}
+
+enum StatutDeclaration {
+  BROUILLON
+  SOUMISE
+  VALIDEE
+  REJETEE
+  VERROUILLEE
+}
+
+enum TypePieceJointe {
+  CNI_PERE
+  CNI_MERE
+  ACTE_MARIAGE_PARENTS
+  AUTRE
+}
+
+enum StatutRectification {
+  DEMANDEE
+  APPROUVEE
+  APPLIQUEE
+  REFUSEE
+}
+
+enum ActionAudit {
+  CREATION
+  MODIFICATION
+  SOUMISSION
+  VALIDATION
+  REJET
+  VERROUILLAGE
+  DEVERROUILLAGE
+  RECTIFICATION
+  EDITION_ACTE
+  REIMPRESSION_ACTE
+  CONNEXION
+  DECONNEXION
+  ECHEC_CONNEXION
+  CONSULTATION
+  EXPORT
+  CREATION_COMPTE
+  DESACTIVATION_COMPTE
+}
+
+// ---------------------------------------------------------------------
+// DECOUPAGE ADMINISTRATIF (reference, alimente par seed)
+// ---------------------------------------------------------------------
+
+model Region {
+  id        String   @id @default(uuid())
+  code      String   @unique // ex: "R09" - entre dans le n° de declaration
+  nom       String   @unique // denomination francaise (en-tete de l'acte)
+  nomEn     String? // denomination anglaise (colonne "Region" de l'acte)
+  chefLieu  String? // chef-lieu de region / Regional Capital
+  actif     Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  departements Departement[]
+  centres      Centre[]
+  mairies      Mairie[]
+
+  @@map("regions")
+}
+
+model Departement {
+  id        String   @id @default(uuid())
+  code      String // ex: "D50"
+  nom       String
+  nomEn     String? // colonne "Division" de l'acte (souvent identique au francais)
+  chefLieu  String? // chef-lieu de departement / Divisional Headquarters
+  regionId  String
+  actif     Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  region          Region           @relation(fields: [regionId], references: [id])
+  arrondissements Arrondissement[]
+  centres         Centre[]
+  mairies         Mairie[]
+
+  @@unique([regionId, code])
+  @@index([regionId])
+  @@map("departements")
+}
+
+model Arrondissement {
+  id            String   @id @default(uuid())
+  code          String // ex: "A309"
+  nom           String
+  nomEn         String? // colonne "Sub-Division" de l'acte
+  codeUnique    String? // code officiel complet, ex: "R09-D50-A309"
+  departementId String
+  actif         Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  departement Departement @relation(fields: [departementId], references: [id])
+  centres     Centre[]
+  mairies     Mairie[]
+
+  @@unique([departementId, code])
+  @@index([departementId])
+  @@map("arrondissements")
+}
+
+// ---------------------------------------------------------------------
+// MAIRIE (centre d'etat civil de rattachement)
+// ---------------------------------------------------------------------
+
+model Mairie {
+  id               String   @id @default(uuid())
+  code             String   @unique
+  nom              String // "Centre d'etat civil de ..."
+  adresse          String?
+  telephone        String?
+  email            String?
+  regionId         String
+  departementId    String
+  arrondissementId String
+  actif            Boolean  @default(true)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  region         Region         @relation(fields: [regionId], references: [id])
+  departement    Departement    @relation(fields: [departementId], references: [id])
+  arrondissement Arrondissement @relation(fields: [arrondissementId], references: [id])
+
+  centres      Centre[]
+  utilisateurs User[]
+  declarations Declaration[]
+  actes        Acte[]
+
+  @@index([arrondissementId])
+  @@map("mairies")
+}
+
+// ---------------------------------------------------------------------
+// CENTRE DE SANTE
+// ---------------------------------------------------------------------
+
+model Centre {
+  id   String @id @default(uuid())
+  code String @unique // code court, entre dans le n° de declaration
+
+  nom     String
+  adresse String
+
+  // Autorisation d'exercer
+  numeroAutorisation          String    @unique
+  autorisationDateDelivrance  DateTime  @db.Date
+  autorisationDateFinValidite DateTime? @db.Date
+
+  // Rattachement administratif
+  regionId         String
+  departementId    String
+  arrondissementId String
+  mairieId         String // mairie competente pour les declarations
+
+  // Chef du centre (identite declarative, distincte du compte utilisateur)
+  chefNom      String
+  chefFonction String
+  chefContact  String
+
+  telephone String?
+  email     String?
+
+  actif       Boolean   @default(true)
+  desactiveLe DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  region         Region         @relation(fields: [regionId], references: [id])
+  departement    Departement    @relation(fields: [departementId], references: [id])
+  arrondissement Arrondissement @relation(fields: [arrondissementId], references: [id])
+  mairie         Mairie         @relation(fields: [mairieId], references: [id])
+
+  personnels   PersonnelSante[]
+  utilisateurs User[]
+  declarations Declaration[]
+  sequences    SequenceDeclaration[]
+
+  @@index([mairieId])
+  @@index([regionId])
+  @@map("centres")
+}
+
+/// Personnel de sante habilite a declarer un accouchement.
+/// Peut exister sans compte de connexion (habilitation != compte).
+model PersonnelSante {
+  id          String  @id @default(uuid())
+  centreId    String
+  nom         String
+  prenoms     String
+  fonction    String // sage-femme, medecin, infirmier...
+  numeroOrdre String? // n° d'ordre professionnel si applicable
+  telephone   String?
+  habilite    Boolean @default(true)
+  userId      String? @unique // compte de connexion eventuel
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  centre Centre @relation(fields: [centreId], references: [id])
+  user   User?  @relation(fields: [userId], references: [id])
+
+  accouchements Declaration[] @relation("PersonnelAccoucheur")
+
+  @@index([centreId])
+  @@map("personnels_sante")
+}
+
+// ---------------------------------------------------------------------
+// COMPTES ET AUTHENTIFICATION
+// ---------------------------------------------------------------------
+
+model User {
+  id             String  @id @default(uuid())
+  email          String  @unique
+  motDePasseHash String
+  nom            String
+  prenoms        String
+  telephone      String?
+  role           Role
+
+  centreId String? // obligatoire pour PERSONNEL_SANTE / CHEF_CENTRE
+  mairieId String? // obligatoire pour OFFICIER_ETAT_CIVIL / SECRETAIRE_MAIRIE
+
+  actif                 Boolean   @default(true)
+  doitChangerMotDePasse Boolean   @default(true)
+  derniereConnexion     DateTime?
+  tentativesEchouees    Int       @default(0)
+  bloqueJusquA          DateTime?
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  desactiveLe DateTime?
+
+  centre Centre? @relation(fields: [centreId], references: [id])
+  mairie Mairie? @relation(fields: [mairieId], references: [id])
+
+  personnelSante PersonnelSante?
+  refreshTokens  RefreshToken[]
+
+  declarationsCreees      Declaration[]   @relation("DeclarationCreateur")
+  declarationsSoumises    Declaration[]   @relation("DeclarationSoumetteur")
+  declarationsTraitees    Declaration[]   @relation("DeclarationValideur")
+  actesEdites             Acte[]          @relation("ActeOfficier")
+  rectificationsDemandees Rectification[] @relation("RectificationDemandeur")
+  rectificationsTraitees  Rectification[] @relation("RectificationDecideur")
+  auditLogs               AuditLog[]
+  accessLogs              AccessLog[]
+
+  @@index([centreId])
+  @@index([mairieId])
+  @@map("utilisateurs")
+}
+
+model RefreshToken {
+  id        String    @id @default(uuid())
+  userId    String
+  tokenHash String    @unique // SHA-256 du refresh token (jamais stocke en clair)
+  familleId String // rotation : detection de rejeu
+  expireLe  DateTime
+  revoqueLe DateTime?
+  ip        String?
+  userAgent String?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([familleId])
+  @@map("refresh_tokens")
+}
+
+// ---------------------------------------------------------------------
+// NUMEROTATION : {codeRegion}-{codeCentre}-{annee}-{sequence}-{cle}
+// ---------------------------------------------------------------------
+
+model SequenceDeclaration {
+  id            String @id @default(uuid())
+  centreId      String
+  annee         Int
+  dernierNumero Int    @default(0)
+
+  centre Centre @relation(fields: [centreId], references: [id])
+
+  @@unique([centreId, annee])
+  @@map("sequences_declaration")
+}
+
+// ---------------------------------------------------------------------
+// DECLARATION DE NAISSANCE
+// ---------------------------------------------------------------------
+
+model Declaration {
+  id String @id @default(uuid())
+
+  /// Identifiant genere par le client hors-ligne : garantit l'idempotence
+  /// de la synchronisation (une naissance = un enregistrement).
+  clientUuid        String  @unique
+  numeroDeclaration String? @unique // attribue a la soumission
+
+  centreId String
+  mairieId String // mairie competente, figee a la creation
+
+  statut  StatutDeclaration @default(BROUILLON)
+  version Int               @default(1) // verrou optimiste (conflits de sync)
+
+  // --- Enfant ---
+  enfantNom             String?
+  enfantPrenoms         String?
+  enfantSexe            Sexe?
+  enfantDateNaissance   DateTime?         @db.Date
+  enfantHeureNaissance  String? // "HH:mm"
+  modeAccouchement      ModeAccouchement?
+  termeGrossesse        TermeGrossesse?
+  moisGrossesse         Int? // renseigne si PREMATURE
+  poidsNaissanceGrammes Int? // donnee de sante
+
+  // --- Pere (CNI chiffree au repos) ---
+  pereNom               String?
+  perePrenoms           String?
+  pereProfession        String?
+  pereDomicile          String?
+  pereNationalite       String?
+  pereDateNaissance     DateTime? @db.Date
+  pereLieuNaissance     String?
+  pereCniNumeroChiffre  String? // AES-256-GCM
+  pereCniNumeroIndex    String? // HMAC-SHA256 (index aveugle, recherche exacte)
+  pereCniDateDelivrance DateTime? @db.Date
+
+  // --- Mere (CNI chiffree au repos) ---
+  mereNom               String?
+  merePrenoms           String?
+  mereProfession        String?
+  mereDomicile          String?
+  mereNationalite       String?
+  mereDateNaissance     DateTime? @db.Date
+  mereLieuNaissance     String?
+  mereCniNumeroChiffre  String?
+  mereCniNumeroIndex    String?
+  mereCniDateDelivrance DateTime? @db.Date
+
+  // --- Personnel medical / declarant ---
+  personnelAccoucheurId String?
+  declarantEstPersonnel Boolean @default(true)
+  declarantNom          String?
+  declarantPrenoms      String?
+  declarantQualite      String? // pere, mere, temoin, agent du centre...
+  declarantContact      String?
+
+  // --- Extension du modele sans migration destructive ---
+  versionModele          Int   @default(1)
+  donneesComplementaires Json?
+
+  // --- Authentification du document ---
+  qrToken     String  @unique // opaque, non devinable, encode dans le QR
+  cleControle String? // cle de controle du numero de declaration
+
+  // --- Cycle de vie ---
+  dateSoumission         DateTime?
+  dateLimiteModification DateTime? // soumission + MODIFICATION_WINDOW_DAYS
+  dateVerrouillage       DateTime?
+  dateValidation         DateTime?
+  dateRejet              DateTime?
+  motifRejet             String?
+
+  creeParId   String
+  soumisParId String?
+  traiteParId String?
+
+  // Tracabilite de la synchronisation hors-ligne
+  saisieLe      DateTime? // horodatage local du poste de saisie
+  synchroniseLe DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  centre     Centre          @relation(fields: [centreId], references: [id])
+  mairie     Mairie          @relation(fields: [mairieId], references: [id])
+  accoucheur PersonnelSante? @relation("PersonnelAccoucheur", fields: [personnelAccoucheurId], references: [id])
+  creePar    User            @relation("DeclarationCreateur", fields: [creeParId], references: [id])
+  soumisPar  User?           @relation("DeclarationSoumetteur", fields: [soumisParId], references: [id])
+  traitePar  User?           @relation("DeclarationValideur", fields: [traiteParId], references: [id])
+
+  piecesJointes  PieceJointe[]
+  acte           Acte?
+  rectifications Rectification[]
+  auditLogs      AuditLog[]
+  accessLogs     AccessLog[]
+
+  @@index([centreId, statut])
+  @@index([mairieId, statut])
+  @@index([statut, dateLimiteModification])
+  @@index([enfantDateNaissance])
+  @@index([pereCniNumeroIndex])
+  @@index([mereCniNumeroIndex])
+  @@map("declarations")
+}
+
+model PieceJointe {
+  id             String          @id @default(uuid())
+  declarationId  String
+  type           TypePieceJointe
+  nomOriginal    String
+  cheminStockage String // fichier chiffre sur disque
+  mimeType       String
+  tailleOctets   Int
+  sha256         String // integrite
+  chiffre        Boolean         @default(true)
+  televerseParId String?
+  supprimeLe     DateTime? // soft delete uniquement
+  createdAt      DateTime        @default(now())
+
+  declaration Declaration @relation(fields: [declarationId], references: [id])
+
+  @@index([declarationId])
+  @@map("pieces_jointes")
+}
+
+// ---------------------------------------------------------------------
+// ACTE DE NAISSANCE (edite par la mairie)
+// ---------------------------------------------------------------------
+
+model Acte {
+  id            String @id @default(uuid())
+  declarationId String @unique
+  mairieId      String
+
+  numeroActe    String   @unique // n° du registre d'etat civil
+  anneeRegistre Int
+  dateDressage  DateTime @db.Date
+
+  officierId           String
+  officierNomComplet   String // fige au moment de l'edition
+  secretaireNomComplet String?
+
+  // Mention marginale reglementaire ("Voir mention au n° ...")
+  mentionMarginale String?
+
+  cheminPdf          String?
+  pdfSha256          String?
+  nbImpressions      Int       @default(0)
+  derniereImpression DateTime?
+
+  annuleLe        DateTime?
+  motifAnnulation String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  declaration Declaration @relation(fields: [declarationId], references: [id])
+  mairie      Mairie      @relation(fields: [mairieId], references: [id])
+  officier    User        @relation("ActeOfficier", fields: [officierId], references: [id])
+
+  @@index([mairieId, anneeRegistre])
+  @@map("actes")
+}
+
+// ---------------------------------------------------------------------
+// RECTIFICATION (seule voie de modification apres verrouillage)
+// ---------------------------------------------------------------------
+
+model Rectification {
+  id            String              @id @default(uuid())
+  declarationId String
+  statut        StatutRectification @default(DEMANDEE)
+
+  motif           String
+  champsCibles    String[] // champs concernes
+  valeursAvant    Json?
+  valeursApres    Json?
+  referenceLegale String? // jugement, requete, PV...
+
+  demandeParId        String
+  decideParId         String?
+  decideLe            DateTime?
+  appliqueeLe         DateTime?
+  commentaireDecision String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  declaration Declaration @relation(fields: [declarationId], references: [id])
+  demandePar  User        @relation("RectificationDemandeur", fields: [demandeParId], references: [id])
+  decidePar   User?       @relation("RectificationDecideur", fields: [decideParId], references: [id])
+
+  @@index([declarationId])
+  @@map("rectifications")
+}
+
+// ---------------------------------------------------------------------
+// AUDIT IMMUABLE (chainage par hash : toute alteration est detectable)
+// ---------------------------------------------------------------------
+
+model AuditLog {
+  id            String      @id @default(uuid())
+  sequence      BigInt      @default(autoincrement())
+  entite        String // "Declaration", "User", "Acte"...
+  entiteId      String
+  action        ActionAudit
+  declarationId String?
+
+  acteurId    String?
+  acteurRole  Role?
+  acteurEmail String? // fige : le compte peut evoluer
+
+  valeursAvant Json?
+  valeursApres Json?
+  metadonnees  Json?
+
+  ip        String?
+  userAgent String?
+
+  hashPrecedent String? // chainage
+  hash          String // SHA-256 du contenu + hashPrecedent
+
+  createdAt DateTime @default(now())
+
+  acteur      User?        @relation(fields: [acteurId], references: [id])
+  declaration Declaration? @relation(fields: [declarationId], references: [id])
+
+  @@index([entite, entiteId])
+  @@index([declarationId])
+  @@index([acteurId])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
+
+/// Journalisation de tout acces en lecture aux donnees personnelles.
+model AccessLog {
+  id              String   @id @default(uuid())
+  userId          String?
+  declarationId   String?
+  ressource       String // route ou ressource consultee
+  champsSensibles String[] // ex: ["pereCniNumero"]
+  motif           String?
+  ip              String?
+  userAgent       String?
+  createdAt       DateTime @default(now())
+
+  user        User?        @relation(fields: [userId], references: [id])
+  declaration Declaration? @relation(fields: [declarationId], references: [id])
+
+  @@index([userId, createdAt])
+  @@index([declarationId])
+  @@map("access_logs")
+}
+
+/// Tentatives de verification publique d'authenticite (anti-enumeration).
+model VerificationLog {
+  id        String   @id @default(uuid())
+  reference String // n° saisi ou token scanne (tronque)
+  resultat  String // AUTHENTIQUE | INTROUVABLE
+  ip        String?
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+  @@map("verification_logs")
+}

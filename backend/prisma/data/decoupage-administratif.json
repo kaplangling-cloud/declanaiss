@@ -1,0 +1,2293 @@
+{
+ "source": "RDC.xlsx (INS / MINAT / Osidimbea, consultes en septembre 2026)",
+ "avertissement": "Certaines denominations d'arrondissements peuvent avoir ete ajustees par des textes recents : a verifier aupres du MINAT avant usage officiel.",
+ "genereLe": "2026-09-11",
+ "regions": [
+  {
+   "code": "R01",
+   "nom": "ADAMAOUA",
+   "nomEn": "ADAMAWA",
+   "chefLieu": "Ngaoundéré",
+   "departements": [
+    {
+     "code": "D01",
+     "nom": "Djérem",
+     "chefLieu": "Tibati",
+     "arrondissements": [
+      {
+       "code": "A001",
+       "nom": "Ngaoundal",
+       "codeUnique": "R01-D01-A001"
+      },
+      {
+       "code": "A002",
+       "nom": "Tibati",
+       "codeUnique": "R01-D01-A002"
+      }
+     ]
+    },
+    {
+     "code": "D02",
+     "nom": "Faro-et-Déo",
+     "chefLieu": "Tignère",
+     "arrondissements": [
+      {
+       "code": "A003",
+       "nom": "Mayo-Baléo",
+       "codeUnique": "R01-D02-A003"
+      },
+      {
+       "code": "A004",
+       "nom": "Tignère",
+       "codeUnique": "R01-D02-A004"
+      },
+      {
+       "code": "A005",
+       "nom": "Galim-Tignère",
+       "codeUnique": "R01-D02-A005"
+      },
+      {
+       "code": "A006",
+       "nom": "Kontcha",
+       "codeUnique": "R01-D02-A006"
+      }
+     ]
+    },
+    {
+     "code": "D03",
+     "nom": "Mayo-Banyo",
+     "chefLieu": "Banyo",
+     "arrondissements": [
+      {
+       "code": "A007",
+       "nom": "Banyo",
+       "codeUnique": "R01-D03-A007"
+      },
+      {
+       "code": "A008",
+       "nom": "Bankim",
+       "codeUnique": "R01-D03-A008"
+      },
+      {
+       "code": "A009",
+       "nom": "Mayo-Darlé",
+       "codeUnique": "R01-D03-A009"
+      }
+     ]
+    },
+    {
+     "code": "D04",
+     "nom": "Mbéré",
+     "chefLieu": "Meiganga",
+     "arrondissements": [
+      {
+       "code": "A010",
+       "nom": "Meiganga",
+       "codeUnique": "R01-D04-A010"
+      },
+      {
+       "code": "A011",
+       "nom": "Djohong",
+       "codeUnique": "R01-D04-A011"
+      },
+      {
+       "code": "A012",
+       "nom": "Dir",
+       "codeUnique": "R01-D04-A012"
+      },
+      {
+       "code": "A013",
+       "nom": "Ngaoui",
+       "codeUnique": "R01-D04-A013"
+      }
+     ]
+    },
+    {
+     "code": "D05",
+     "nom": "Vina",
+     "chefLieu": "Ngaoundéré",
+     "arrondissements": [
+      {
+       "code": "A014",
+       "nom": "Ngaoundéré 1er",
+       "codeUnique": "R01-D05-A014"
+      },
+      {
+       "code": "A015",
+       "nom": "Ngaoundéré 2e",
+       "codeUnique": "R01-D05-A015"
+      },
+      {
+       "code": "A016",
+       "nom": "Ngaoundéré 3e",
+       "codeUnique": "R01-D05-A016"
+      },
+      {
+       "code": "A017",
+       "nom": "Bélel",
+       "codeUnique": "R01-D05-A017"
+      },
+      {
+       "code": "A018",
+       "nom": "Mbé",
+       "codeUnique": "R01-D05-A018"
+      },
+      {
+       "code": "A019",
+       "nom": "Nganha",
+       "codeUnique": "R01-D05-A019"
+      },
+      {
+       "code": "A020",
+       "nom": "Nyambaka",
+       "codeUnique": "R01-D05-A020"
+      },
+      {
+       "code": "A021",
+       "nom": "Martap",
+       "codeUnique": "R01-D05-A021"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "code": "R02",
+   "nom": "CENTRE",
+   "nomEn": "CENTRE",
+   "chefLieu": "Yaoundé",
+   "departements": [
+    {
+     "code": "D06",
+     "nom": "Haute-Sanaga",
+     "chefLieu": "Nanga-Eboko",
+     "arrondissements": [
+      {
+       "code": "A022",
+       "nom": "Mbandjock",
+       "codeUnique": "R02-D06-A022"
+      },
+      {
+       "code": "A023",
+       "nom": "Minta",
+       "codeUnique": "R02-D06-A023"
+      },
+      {
+       "code": "A024",
+       "nom": "Nanga-Eboko",
+       "codeUnique": "R02-D06-A024"
+      },
+      {
+       "code": "A025",
+       "nom": "Nkoteng",
+       "codeUnique": "R02-D06-A025"
+      },
+      {
+       "code": "A026",
+       "nom": "Bibey",
+       "codeUnique": "R02-D06-A026"
+      },
+      {
+       "code": "A027",
+       "nom": "Nsem",
+       "codeUnique": "R02-D06-A027"
+      },
+      {
+       "code": "A028",
+       "nom": "Lembé-Yezoum",
+       "codeUnique": "R02-D06-A028"
+      }
+     ]
+    },
+    {
+     "code": "D07",
+     "nom": "Lékié",
+     "chefLieu": "Monatélé",
+     "arrondissements": [
+      {
+       "code": "A029",
+       "nom": "Évodoula",
+       "codeUnique": "R02-D07-A029"
+      },
+      {
+       "code": "A030",
+       "nom": "Monatélé",
+       "codeUnique": "R02-D07-A030"
+      },
+      {
+       "code": "A031",
+       "nom": "Obala",
+       "codeUnique": "R02-D07-A031"
+      },
+      {
+       "code": "A032",
+       "nom": "Okola",
+       "codeUnique": "R02-D07-A032"
+      },
+      {
+       "code": "A033",
+       "nom": "Sa'a",
+       "codeUnique": "R02-D07-A033"
+      },
+      {
+       "code": "A034",
+       "nom": "Élig-Mfomo",
+       "codeUnique": "R02-D07-A034"
+      },
+      {
+       "code": "A035",
+       "nom": "Ebebda",
+       "codeUnique": "R02-D07-A035"
+      },
+      {
+       "code": "A036",
+       "nom": "Batchenga",
+       "codeUnique": "R02-D07-A036"
+      },
+      {
+       "code": "A037",
+       "nom": "Lobo",
+       "codeUnique": "R02-D07-A037"
+      }
+     ]
+    },
+    {
+     "code": "D08",
+     "nom": "Mbam-et-Inoubou",
+     "chefLieu": "Bafia",
+     "arrondissements": [
+      {
+       "code": "A038",
+       "nom": "Bafia",
+       "codeUnique": "R02-D08-A038"
+      },
+      {
+       "code": "A039",
+       "nom": "Bokito",
+       "codeUnique": "R02-D08-A039"
+      },
+      {
+       "code": "A040",
+       "nom": "Deuk",
+       "codeUnique": "R02-D08-A040"
+      },
+      {
+       "code": "A041",
+       "nom": "Makénéné",
+       "codeUnique": "R02-D08-A041"
+      },
+      {
+       "code": "A042",
+       "nom": "Ndikiniméki",
+       "codeUnique": "R02-D08-A042"
+      },
+      {
+       "code": "A043",
+       "nom": "Ombessa",
+       "codeUnique": "R02-D08-A043"
+      },
+      {
+       "code": "A044",
+       "nom": "Kiiki",
+       "codeUnique": "R02-D08-A044"
+      },
+      {
+       "code": "A045",
+       "nom": "Kon-Yambetta",
+       "codeUnique": "R02-D08-A045"
+      },
+      {
+       "code": "A046",
+       "nom": "Nitoukou",
+       "codeUnique": "R02-D08-A046"
+      }
+     ]
+    },
+    {
+     "code": "D09",
+     "nom": "Mbam-et-Kim",
+     "chefLieu": "Ntui",
+     "arrondissements": [
+      {
+       "code": "A047",
+       "nom": "Ntui",
+       "codeUnique": "R02-D09-A047"
+      },
+      {
+       "code": "A048",
+       "nom": "Ngambé-Tikar",
+       "codeUnique": "R02-D09-A048"
+      },
+      {
+       "code": "A049",
+       "nom": "Ngoro",
+       "codeUnique": "R02-D09-A049"
+      },
+      {
+       "code": "A050",
+       "nom": "Yoko",
+       "codeUnique": "R02-D09-A050"
+      },
+      {
+       "code": "A051",
+       "nom": "Mbangassina",
+       "codeUnique": "R02-D09-A051"
+      }
+     ]
+    },
+    {
+     "code": "D10",
+     "nom": "Méfou-et-Afamba",
+     "chefLieu": "Mfou",
+     "arrondissements": [
+      {
+       "code": "A052",
+       "nom": "Mfou",
+       "codeUnique": "R02-D10-A052"
+      },
+      {
+       "code": "A053",
+       "nom": "Esse",
+       "codeUnique": "R02-D10-A053"
+      },
+      {
+       "code": "A054",
+       "nom": "Awaé",
+       "codeUnique": "R02-D10-A054"
+      },
+      {
+       "code": "A055",
+       "nom": "Soa",
+       "codeUnique": "R02-D10-A055"
+      },
+      {
+       "code": "A056",
+       "nom": "Afanloum",
+       "codeUnique": "R02-D10-A056"
+      },
+      {
+       "code": "A057",
+       "nom": "Olanguina",
+       "codeUnique": "R02-D10-A057"
+      },
+      {
+       "code": "A058",
+       "nom": "Edzendouan",
+       "codeUnique": "R02-D10-A058"
+      },
+      {
+       "code": "A059",
+       "nom": "Nkolafamba",
+       "codeUnique": "R02-D10-A059"
+      }
+     ]
+    },
+    {
+     "code": "D11",
+     "nom": "Méfou-et-Akono",
+     "chefLieu": "Ngoumou",
+     "arrondissements": [
+      {
+       "code": "A060",
+       "nom": "Ngoumou",
+       "codeUnique": "R02-D11-A060"
+      },
+      {
+       "code": "A061",
+       "nom": "Akono",
+       "codeUnique": "R02-D11-A061"
+      },
+      {
+       "code": "A062",
+       "nom": "Mbankomo",
+       "codeUnique": "R02-D11-A062"
+      },
+      {
+       "code": "A063",
+       "nom": "Bikok",
+       "codeUnique": "R02-D11-A063"
+      }
+     ]
+    },
+    {
+     "code": "D12",
+     "nom": "Mfoundi",
+     "chefLieu": "Yaoundé",
+     "arrondissements": [
+      {
+       "code": "A064",
+       "nom": "Yaoundé I",
+       "codeUnique": "R02-D12-A064"
+      },
+      {
+       "code": "A065",
+       "nom": "Yaoundé II",
+       "codeUnique": "R02-D12-A065"
+      },
+      {
+       "code": "A066",
+       "nom": "Yaoundé III",
+       "codeUnique": "R02-D12-A066"
+      },
+      {
+       "code": "A067",
+       "nom": "Yaoundé IV",
+       "codeUnique": "R02-D12-A067"
+      },
+      {
+       "code": "A068",
+       "nom": "Yaoundé V",
+       "codeUnique": "R02-D12-A068"
+      },
+      {
+       "code": "A069",
+       "nom": "Yaoundé VI",
+       "codeUnique": "R02-D12-A069"
+      },
+      {
+       "code": "A070",
+       "nom": "Yaoundé VII",
+       "codeUnique": "R02-D12-A070"
+      }
+     ]
+    },
+    {
+     "code": "D13",
+     "nom": "Nyong-et-Kéllé",
+     "chefLieu": "Éséka",
+     "arrondissements": [
+      {
+       "code": "A071",
+       "nom": "Bot-Makak",
+       "codeUnique": "R02-D13-A071"
+      },
+      {
+       "code": "A072",
+       "nom": "Éséka",
+       "codeUnique": "R02-D13-A072"
+      },
+      {
+       "code": "A073",
+       "nom": "Makak",
+       "codeUnique": "R02-D13-A073"
+      },
+      {
+       "code": "A074",
+       "nom": "Messondo",
+       "codeUnique": "R02-D13-A074"
+      },
+      {
+       "code": "A075",
+       "nom": "Ngog-Mapubi",
+       "codeUnique": "R02-D13-A075"
+      },
+      {
+       "code": "A076",
+       "nom": "Matomb",
+       "codeUnique": "R02-D13-A076"
+      },
+      {
+       "code": "A077",
+       "nom": "Dibang",
+       "codeUnique": "R02-D13-A077"
+      },
+      {
+       "code": "A078",
+       "nom": "Nguibassal",
+       "codeUnique": "R02-D13-A078"
+      },
+      {
+       "code": "A079",
+       "nom": "Bondjock",
+       "codeUnique": "R02-D13-A079"
+      },
+      {
+       "code": "A080",
+       "nom": "Biyouha",
+       "codeUnique": "R02-D13-A080"
+      }
+     ]
+    },
+    {
+     "code": "D14",
+     "nom": "Nyong-et-Mfoumou",
+     "chefLieu": "Akonolinga",
+     "arrondissements": [
+      {
+       "code": "A081",
+       "nom": "Akonolinga",
+       "codeUnique": "R02-D14-A081"
+      },
+      {
+       "code": "A082",
+       "nom": "Ayos",
+       "codeUnique": "R02-D14-A082"
+      },
+      {
+       "code": "A083",
+       "nom": "Endom",
+       "codeUnique": "R02-D14-A083"
+      },
+      {
+       "code": "A084",
+       "nom": "Mengang",
+       "codeUnique": "R02-D14-A084"
+      },
+      {
+       "code": "A085",
+       "nom": "Kobdombo",
+       "codeUnique": "R02-D14-A085"
+      }
+     ]
+    },
+    {
+     "code": "D15",
+     "nom": "Nyong-et-So'o",
+     "chefLieu": "Mbalmayo",
+     "arrondissements": [
+      {
+       "code": "A086",
+       "nom": "Dzeng",
+       "codeUnique": "R02-D15-A086"
+      },
+      {
+       "code": "A087",
+       "nom": "Mbalmayo",
+       "codeUnique": "R02-D15-A087"
+      },
+      {
+       "code": "A088",
+       "nom": "Ngomedzap",
+       "codeUnique": "R02-D15-A088"
+      },
+      {
+       "code": "A089",
+       "nom": "Akoéman",
+       "codeUnique": "R02-D15-A089"
+      },
+      {
+       "code": "A090",
+       "nom": "Mengueme",
+       "codeUnique": "R02-D15-A090"
+      },
+      {
+       "code": "A091",
+       "nom": "Nkol-Metet",
+       "codeUnique": "R02-D15-A091"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "code": "R03",
+   "nom": "EST",
+   "nomEn": "EAST",
+   "chefLieu": "Bertoua",
+   "departements": [
+    {
+     "code": "D16",
+     "nom": "Boumba-et-Ngoko",
+     "chefLieu": "Yokadouma",
+     "arrondissements": [
+      {
+       "code": "A092",
+       "nom": "Moloundou",
+       "codeUnique": "R03-D16-A092"
+      },
+      {
+       "code": "A093",
+       "nom": "Salapoumbé",
+       "codeUnique": "R03-D16-A093"
+      },
+      {
+       "code": "A094",
+       "nom": "Gari-Gombo",
+       "codeUnique": "R03-D16-A094"
+      },
+      {
+       "code": "A095",
+       "nom": "Yokadouma",
+       "codeUnique": "R03-D16-A095"
+      }
+     ]
+    },
+    {
+     "code": "D17",
+     "nom": "Haut-Nyong",
+     "chefLieu": "Abong-Mbang",
+     "arrondissements": [
+      {
+       "code": "A096",
+       "nom": "Abong-Mbang",
+       "codeUnique": "R03-D17-A096"
+      },
+      {
+       "code": "A097",
+       "nom": "Doumé",
+       "codeUnique": "R03-D17-A097"
+      },
+      {
+       "code": "A098",
+       "nom": "Lomié",
+       "codeUnique": "R03-D17-A098"
+      },
+      {
+       "code": "A099",
+       "nom": "Messamena",
+       "codeUnique": "R03-D17-A099"
+      },
+      {
+       "code": "A100",
+       "nom": "Nguélémendouka",
+       "codeUnique": "R03-D17-A100"
+      },
+      {
+       "code": "A101",
+       "nom": "Dimako",
+       "codeUnique": "R03-D17-A101"
+      },
+      {
+       "code": "A102",
+       "nom": "Ngoyla",
+       "codeUnique": "R03-D17-A102"
+      },
+      {
+       "code": "A103",
+       "nom": "Atok",
+       "codeUnique": "R03-D17-A103"
+      },
+      {
+       "code": "A104",
+       "nom": "Angossas",
+       "codeUnique": "R03-D17-A104"
+      },
+      {
+       "code": "A105",
+       "nom": "Dja",
+       "codeUnique": "R03-D17-A105"
+      },
+      {
+       "code": "A106",
+       "nom": "Doumaintang",
+       "codeUnique": "R03-D17-A106"
+      },
+      {
+       "code": "A107",
+       "nom": "Messok",
+       "codeUnique": "R03-D17-A107"
+      },
+      {
+       "code": "A108",
+       "nom": "Somalomo",
+       "codeUnique": "R03-D17-A108"
+      },
+      {
+       "code": "A109",
+       "nom": "Mboma",
+       "codeUnique": "R03-D17-A109"
+      }
+     ]
+    },
+    {
+     "code": "D18",
+     "nom": "Kadey",
+     "chefLieu": "Batouri",
+     "arrondissements": [
+      {
+       "code": "A110",
+       "nom": "Batouri",
+       "codeUnique": "R03-D18-A110"
+      },
+      {
+       "code": "A111",
+       "nom": "Ndélélé",
+       "codeUnique": "R03-D18-A111"
+      },
+      {
+       "code": "A112",
+       "nom": "Kette",
+       "codeUnique": "R03-D18-A112"
+      },
+      {
+       "code": "A113",
+       "nom": "Mbang",
+       "codeUnique": "R03-D18-A113"
+      },
+      {
+       "code": "A114",
+       "nom": "Ndem-Nam",
+       "codeUnique": "R03-D18-A114"
+      },
+      {
+       "code": "A115",
+       "nom": "Bombé",
+       "codeUnique": "R03-D18-A115"
+      },
+      {
+       "code": "A116",
+       "nom": "Mbotoro",
+       "codeUnique": "R03-D18-A116"
+      }
+     ]
+    },
+    {
+     "code": "D19",
+     "nom": "Lom-et-Djérem",
+     "chefLieu": "Bertoua",
+     "arrondissements": [
+      {
+       "code": "A117",
+       "nom": "Bertoua 1er",
+       "codeUnique": "R03-D19-A117"
+      },
+      {
+       "code": "A118",
+       "nom": "Bertoua 2e",
+       "codeUnique": "R03-D19-A118"
+      },
+      {
+       "code": "A119",
+       "nom": "Bétaré-Oya",
+       "codeUnique": "R03-D19-A119"
+      },
+      {
+       "code": "A120",
+       "nom": "Bélabo",
+       "codeUnique": "R03-D19-A120"
+      },
+      {
+       "code": "A121",
+       "nom": "Garoua-Boulaï",
+       "codeUnique": "R03-D19-A121"
+      },
+      {
+       "code": "A122",
+       "nom": "Diang",
+       "codeUnique": "R03-D19-A122"
+      },
+      {
+       "code": "A123",
+       "nom": "Mandjou",
+       "codeUnique": "R03-D19-A123"
+      },
+      {
+       "code": "A124",
+       "nom": "Ngoura",
+       "codeUnique": "R03-D19-A124"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "code": "R04",
+   "nom": "EXTRÊME-NORD",
+   "nomEn": "FAR NORTH",
+   "chefLieu": "Maroua",
+   "departements": [
+    {
+     "code": "D20",
+     "nom": "Diamaré",
+     "chefLieu": "Maroua",
+     "arrondissements": [
+      {
+       "code": "A125",
+       "nom": "Bogo",
+       "codeUnique": "R04-D20-A125"
+      },
+      {
+       "code": "A126",
+       "nom": "Maroua 1er",
+       "codeUnique": "R04-D20-A126"
+      },
+      {
+       "code": "A127",
+       "nom": "Maroua 2e",
+       "codeUnique": "R04-D20-A127"
+      },
+      {
+       "code": "A128",
+       "nom": "Maroua 3e",
+       "codeUnique": "R04-D20-A128"
+      },
+      {
+       "code": "A129",
+       "nom": "Méri",
+       "codeUnique": "R04-D20-A129"
+      },
+      {
+       "code": "A130",
+       "nom": "Gazawa",
+       "codeUnique": "R04-D20-A130"
+      },
+      {
+       "code": "A131",
+       "nom": "Pétté",
+       "codeUnique": "R04-D20-A131"
+      },
+      {
+       "code": "A132",
+       "nom": "Dargala",
+       "codeUnique": "R04-D20-A132"
+      },
+      {
+       "code": "A133",
+       "nom": "Ndoukoula",
+       "codeUnique": "R04-D20-A133"
+      }
+     ]
+    },
+    {
+     "code": "D21",
+     "nom": "Logone-et-Chari",
+     "chefLieu": "Kousséri",
+     "arrondissements": [
+      {
+       "code": "A134",
+       "nom": "Kousséri",
+       "codeUnique": "R04-D21-A134"
+      },
+      {
+       "code": "A135",
+       "nom": "Makary",
+       "codeUnique": "R04-D21-A135"
+      },
+      {
+       "code": "A136",
+       "nom": "Logone-Birni",
+       "codeUnique": "R04-D21-A136"
+      },
+      {
+       "code": "A137",
+       "nom": "Goulfey",
+       "codeUnique": "R04-D21-A137"
+      },
+      {
+       "code": "A138",
+       "nom": "Waza",
+       "codeUnique": "R04-D21-A138"
+      },
+      {
+       "code": "A139",
+       "nom": "Fotokol",
+       "codeUnique": "R04-D21-A139"
+      },
+      {
+       "code": "A140",
+       "nom": "Hilé-Halifa",
+       "codeUnique": "R04-D21-A140"
+      },
+      {
+       "code": "A141",
+       "nom": "Blangoua",
+       "codeUnique": "R04-D21-A141"
+      },
+      {
+       "code": "A142",
+       "nom": "Darak",
+       "codeUnique": "R04-D21-A142"
+      },
+      {
+       "code": "A143",
+       "nom": "Zina",
+       "codeUnique": "R04-D21-A143"
+      }
+     ]
+    },
+    {
+     "code": "D22",
+     "nom": "Mayo-Danay",
+     "chefLieu": "Yagoua",
+     "arrondissements": [
+      {
+       "code": "A144",
+       "nom": "Kar-Hay",
+       "codeUnique": "R04-D22-A144"
+      },
+      {
+       "code": "A145",
+       "nom": "Datcheka",
+       "codeUnique": "R04-D22-A145"
+      },
+      {
+       "code": "A146",
+       "nom": "Yagoua",
+       "codeUnique": "R04-D22-A146"
+      },
+      {
+       "code": "A147",
+       "nom": "Guéré",
+       "codeUnique": "R04-D22-A147"
+      },
+      {
+       "code": "A148",
+       "nom": "Maga",
+       "codeUnique": "R04-D22-A148"
+      },
+      {
+       "code": "A149",
+       "nom": "Kalfou",
+       "codeUnique": "R04-D22-A149"
+      },
+      {
+       "code": "A150",
+       "nom": "Wina",
+       "codeUnique": "R04-D22-A150"
+      },
+      {
+       "code": "A151",
+       "nom": "Guémé",
+       "codeUnique": "R04-D22-A151"
+      },
+      {
+       "code": "A152",
+       "nom": "Tchatibali",
+       "codeUnique": "R04-D22-A152"
+      },
+      {
+       "code": "A153",
+       "nom": "Gobo",
+       "codeUnique": "R04-D22-A153"
+      },
+      {
+       "code": "A154",
+       "nom": "Kaï-Kaï",
+       "codeUnique": "R04-D22-A154"
+      }
+     ]
+    },
+    {
+     "code": "D23",
+     "nom": "Mayo-Kani",
+     "chefLieu": "Kaélé",
+     "arrondissements": [
+      {
+       "code": "A155",
+       "nom": "Kaélé",
+       "codeUnique": "R04-D23-A155"
+      },
+      {
+       "code": "A156",
+       "nom": "Guidiguis",
+       "codeUnique": "R04-D23-A156"
+      },
+      {
+       "code": "A157",
+       "nom": "Mindif",
+       "codeUnique": "R04-D23-A157"
+      },
+      {
+       "code": "A158",
+       "nom": "Moutourwa",
+       "codeUnique": "R04-D23-A158"
+      },
+      {
+       "code": "A159",
+       "nom": "Moulvoudaye",
+       "codeUnique": "R04-D23-A159"
+      },
+      {
+       "code": "A160",
+       "nom": "Porhi",
+       "codeUnique": "R04-D23-A160"
+      },
+      {
+       "code": "A161",
+       "nom": "Taïbong",
+       "codeUnique": "R04-D23-A161"
+      }
+     ]
+    },
+    {
+     "code": "D24",
+     "nom": "Mayo-Sava",
+     "chefLieu": "Mora",
+     "arrondissements": [
+      {
+       "code": "A162",
+       "nom": "Mora",
+       "codeUnique": "R04-D24-A162"
+      },
+      {
+       "code": "A163",
+       "nom": "Tokombéré",
+       "codeUnique": "R04-D24-A163"
+      },
+      {
+       "code": "A164",
+       "nom": "Kolofata",
+       "codeUnique": "R04-D24-A164"
+      }
+     ]
+    },
+    {
+     "code": "D25",
+     "nom": "Mayo-Tsanaga",
+     "chefLieu": "Mokolo",
+     "arrondissements": [
+      {
+       "code": "A165",
+       "nom": "Mokolo",
+       "codeUnique": "R04-D25-A165"
+      },
+      {
+       "code": "A166",
+       "nom": "Bourrha",
+       "codeUnique": "R04-D25-A166"
+      },
+      {
+       "code": "A167",
+       "nom": "Koza",
+       "codeUnique": "R04-D25-A167"
+      },
+      {
+       "code": "A168",
+       "nom": "Hina",
+       "codeUnique": "R04-D25-A168"
+      },
+      {
+       "code": "A169",
+       "nom": "Mogodé",
+       "codeUnique": "R04-D25-A169"
+      },
+      {
+       "code": "A170",
+       "nom": "Mayo-Moskota",
+       "codeUnique": "R04-D25-A170"
+      },
+      {
+       "code": "A171",
+       "nom": "Soulédé-Roua",
+       "codeUnique": "R04-D25-A171"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "code": "R05",
+   "nom": "LITTORAL",
+   "nomEn": "LITTORAL",
+   "chefLieu": "Douala",
+   "departements": [
+    {
+     "code": "D26",
+     "nom": "Moungo",
+     "chefLieu": "Nkongsamba",
+     "arrondissements": [
+      {
+       "code": "A172",
+       "nom": "Dibombari",
+       "codeUnique": "R05-D26-A172"
+      },
+      {
+       "code": "A173",
+       "nom": "Loum",
+       "codeUnique": "R05-D26-A173"
+      },
+      {
+       "code": "A174",
+       "nom": "Manjo",
+       "codeUnique": "R05-D26-A174"
+      },
+      {
+       "code": "A175",
+       "nom": "Mbanga",
+       "codeUnique": "R05-D26-A175"
+      },
+      {
+       "code": "A176",
+       "nom": "Melong",
+       "codeUnique": "R05-D26-A176"
+      },
+      {
+       "code": "A177",
+       "nom": "Nkongsamba 1er",
+       "codeUnique": "R05-D26-A177"
+      },
+      {
+       "code": "A178",
+       "nom": "Nkongsamba 2e",
+       "codeUnique": "R05-D26-A178"
+      },
+      {
+       "code": "A179",
+       "nom": "Nkongsamba 3e",
+       "codeUnique": "R05-D26-A179"
+      },
+      {
+       "code": "A180",
+       "nom": "Ébone",
+       "codeUnique": "R05-D26-A180"
+      },
+      {
+       "code": "A181",
+       "nom": "Baré-Bakem",
+       "codeUnique": "R05-D26-A181"
+      },
+      {
+       "code": "A182",
+       "nom": "Njombé-Penja",
+       "codeUnique": "R05-D26-A182"
+      },
+      {
+       "code": "A183",
+       "nom": "Bonaléa",
+       "codeUnique": "R05-D26-A183"
+      },
+      {
+       "code": "A184",
+       "nom": "Mombo",
+       "codeUnique": "R05-D26-A184"
+      }
+     ]
+    },
+    {
+     "code": "D27",
+     "nom": "Nkam",
+     "chefLieu": "Yabassi",
+     "arrondissements": [
+      {
+       "code": "A185",
+       "nom": "Nkondjock",
+       "codeUnique": "R05-D27-A185"
+      },
+      {
+       "code": "A186",
+       "nom": "Yabassi",
+       "codeUnique": "R05-D27-A186"
+      },
+      {
+       "code": "A187",
+       "nom": "Yingui",
+       "codeUnique": "R05-D27-A187"
+      },
+      {
+       "code": "A188",
+       "nom": "Nord-Makombé",
+       "codeUnique": "R05-D27-A188"
+      }
+     ]
+    },
+    {
+     "code": "D28",
+     "nom": "Sanaga-Maritime",
+     "chefLieu": "Édéa",
+     "arrondissements": [
+      {
+       "code": "A189",
+       "nom": "Dizangué",
+       "codeUnique": "R05-D28-A189"
+      },
+      {
+       "code": "A190",
+       "nom": "Édéa 1er",
+       "codeUnique": "R05-D28-A190"
+      },
+      {
+       "code": "A191",
+       "nom": "Édéa 2e",
+       "codeUnique": "R05-D28-A191"
+      },
+      {
+       "code": "A192",
+       "nom": "Ndom",
+       "codeUnique": "R05-D28-A192"
+      },
+      {
+       "code": "A193",
+       "nom": "Ngambé",
+       "codeUnique": "R05-D28-A193"
+      },
+      {
+       "code": "A194",
+       "nom": "Pouma",
+       "codeUnique": "R05-D28-A194"
+      },
+      {
+       "code": "A195",
+       "nom": "Mouanko",
+       "codeUnique": "R05-D28-A195"
+      },
+      {
+       "code": "A196",
+       "nom": "Dibamba",
+       "codeUnique": "R05-D28-A196"
+      },
+      {
+       "code": "A197",
+       "nom": "Ngwei",
+       "codeUnique": "R05-D28-A197"
+      },
+      {
+       "code": "A198",
+       "nom": "Nyanon",
+       "codeUnique": "R05-D28-A198"
+      },
+      {
+       "code": "A199",
+       "nom": "Massock-Songloulou",
+       "codeUnique": "R05-D28-A199"
+      }
+     ]
+    },
+    {
+     "code": "D29",
+     "nom": "Wouri",
+     "chefLieu": "Douala",
+     "arrondissements": [
+      {
+       "code": "A200",
+       "nom": "Douala 1er",
+       "codeUnique": "R05-D29-A200"
+      },
+      {
+       "code": "A201",
+       "nom": "Douala 2e",
+       "codeUnique": "R05-D29-A201"
+      },
+      {
+       "code": "A202",
+       "nom": "Douala 3e",
+       "codeUnique": "R05-D29-A202"
+      },
+      {
+       "code": "A203",
+       "nom": "Douala 4e",
+       "codeUnique": "R05-D29-A203"
+      },
+      {
+       "code": "A204",
+       "nom": "Douala 5e",
+       "codeUnique": "R05-D29-A204"
+      },
+      {
+       "code": "A205",
+       "nom": "Manoka",
+       "codeUnique": "R05-D29-A205"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "code": "R06",
+   "nom": "NORD",
+   "nomEn": "NORTH",
+   "chefLieu": "Garoua",
+   "departements": [
+    {
+     "code": "D30",
+     "nom": "Bénoué",
+     "chefLieu": "Garoua",
+     "arrondissements": [
+      {
+       "code": "A206",
+       "nom": "Garoua 1er",
+       "codeUnique": "R06-D30-A206"
+      },
+      {
+       "code": "A207",
+       "nom": "Garoua 2e",
+       "codeUnique": "R06-D30-A207"
+      },
+      {
+       "code": "A208",
+       "nom": "Garoua 3e",
+       "codeUnique": "R06-D30-A208"
+      },
+      {
+       "code": "A209",
+       "nom": "Bibémi",
+       "codeUnique": "R06-D30-A209"
+      },
+      {
+       "code": "A210",
+       "nom": "Pitoa",
+       "codeUnique": "R06-D30-A210"
+      },
+      {
+       "code": "A211",
+       "nom": "Lagdo",
+       "codeUnique": "R06-D30-A211"
+      },
+      {
+       "code": "A212",
+       "nom": "Dembo",
+       "codeUnique": "R06-D30-A212"
+      },
+      {
+       "code": "A213",
+       "nom": "Ngong",
+       "codeUnique": "R06-D30-A213"
+      },
+      {
+       "code": "A214",
+       "nom": "Bardanké",
+       "codeUnique": "R06-D30-A214"
+      },
+      {
+       "code": "A215",
+       "nom": "Touroua",
+       "codeUnique": "R06-D30-A215"
+      },
+      {
+       "code": "A216",
+       "nom": "Bascheo",
+       "codeUnique": "R06-D30-A216"
+      },
+      {
+       "code": "A217",
+       "nom": "Demsa",
+       "codeUnique": "R06-D30-A217"
+      }
+     ]
+    },
+    {
+     "code": "D31",
+     "nom": "Faro",
+     "chefLieu": "Poli",
+     "arrondissements": [
+      {
+       "code": "A218",
+       "nom": "Poli",
+       "codeUnique": "R06-D31-A218"
+      },
+      {
+       "code": "A219",
+       "nom": "Béka",
+       "codeUnique": "R06-D31-A219"
+      }
+     ]
+    },
+    {
+     "code": "D32",
+     "nom": "Mayo-Louti",
+     "chefLieu": "Guider",
+     "arrondissements": [
+      {
+       "code": "A220",
+       "nom": "Guider",
+       "codeUnique": "R06-D32-A220"
+      },
+      {
+       "code": "A221",
+       "nom": "Mayo-Oulo",
+       "codeUnique": "R06-D32-A221"
+      },
+      {
+       "code": "A222",
+       "nom": "Figuil",
+       "codeUnique": "R06-D32-A222"
+      }
+     ]
+    },
+    {
+     "code": "D33",
+     "nom": "Mayo-Rey",
+     "chefLieu": "Tchollire",
+     "arrondissements": [
+      {
+       "code": "A223",
+       "nom": "Rey-Bouba",
+       "codeUnique": "R06-D33-A223"
+      },
+      {
+       "code": "A224",
+       "nom": "Tchollire",
+       "codeUnique": "R06-D33-A224"
+      },
+      {
+       "code": "A225",
+       "nom": "Touboro",
+       "codeUnique": "R06-D33-A225"
+      },
+      {
+       "code": "A226",
+       "nom": "Madingring",
+       "codeUnique": "R06-D33-A226"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "code": "R07",
+   "nom": "NORD-OUEST",
+   "nomEn": "NORTH WEST",
+   "chefLieu": "Bamenda",
+   "departements": [
+    {
+     "code": "D34",
+     "nom": "Bui",
+     "chefLieu": "Kumbo",
+     "arrondissements": [
+      {
+       "code": "A227",
+       "nom": "Jakiri",
+       "codeUnique": "R07-D34-A227"
+      },
+      {
+       "code": "A228",
+       "nom": "Kumbo",
+       "codeUnique": "R07-D34-A228"
+      },
+      {
+       "code": "A229",
+       "nom": "Elak-Oku",
+       "codeUnique": "R07-D34-A229"
+      },
+      {
+       "code": "A230",
+       "nom": "Mbiame",
+       "codeUnique": "R07-D34-A230"
+      },
+      {
+       "code": "A231",
+       "nom": "Ekor",
+       "codeUnique": "R07-D34-A231"
+      },
+      {
+       "code": "A232",
+       "nom": "Nkum",
+       "codeUnique": "R07-D34-A232"
+      }
+     ]
+    },
+    {
+     "code": "D35",
+     "nom": "Boyo",
+     "chefLieu": "Fundong",
+     "arrondissements": [
+      {
+       "code": "A233",
+       "nom": "Fundong",
+       "codeUnique": "R07-D35-A233"
+      },
+      {
+       "code": "A234",
+       "nom": "Belo",
+       "codeUnique": "R07-D35-A234"
+      },
+      {
+       "code": "A235",
+       "nom": "Bum",
+       "codeUnique": "R07-D35-A235"
+      },
+      {
+       "code": "A236",
+       "nom": "Njinikom",
+       "codeUnique": "R07-D35-A236"
+      }
+     ]
+    },
+    {
+     "code": "D36",
+     "nom": "Donga-Mantung",
+     "chefLieu": "Nkambé",
+     "arrondissements": [
+      {
+       "code": "A237",
+       "nom": "Nkambé",
+       "codeUnique": "R07-D36-A237"
+      },
+      {
+       "code": "A238",
+       "nom": "Nwa",
+       "codeUnique": "R07-D36-A238"
+      },
+      {
+       "code": "A239",
+       "nom": "Ako",
+       "codeUnique": "R07-D36-A239"
+      },
+      {
+       "code": "A240",
+       "nom": "Misaje",
+       "codeUnique": "R07-D36-A240"
+      },
+      {
+       "code": "A241",
+       "nom": "Ndu",
+       "codeUnique": "R07-D36-A241"
+      }
+     ]
+    },
+    {
+     "code": "D37",
+     "nom": "Menchum",
+     "chefLieu": "Wum",
+     "arrondissements": [
+      {
+       "code": "A242",
+       "nom": "Wum",
+       "codeUnique": "R07-D37-A242"
+      },
+      {
+       "code": "A243",
+       "nom": "Furu-Awa",
+       "codeUnique": "R07-D37-A243"
+      },
+      {
+       "code": "A244",
+       "nom": "Benakuma",
+       "codeUnique": "R07-D37-A244"
+      },
+      {
+       "code": "A245",
+       "nom": "Zhoa",
+       "codeUnique": "R07-D37-A245"
+      }
+     ]
+    },
+    {
+     "code": "D38",
+     "nom": "Mezam",
+     "chefLieu": "Bamenda",
+     "arrondissements": [
+      {
+       "code": "A246",
+       "nom": "Bamenda 1er",
+       "codeUnique": "R07-D38-A246"
+      },
+      {
+       "code": "A247",
+       "nom": "Bamenda 2e",
+       "codeUnique": "R07-D38-A247"
+      },
+      {
+       "code": "A248",
+       "nom": "Bamenda 3e",
+       "codeUnique": "R07-D38-A248"
+      },
+      {
+       "code": "A249",
+       "nom": "Bali",
+       "codeUnique": "R07-D38-A249"
+      },
+      {
+       "code": "A250",
+       "nom": "Tubah",
+       "codeUnique": "R07-D38-A250"
+      },
+      {
+       "code": "A251",
+       "nom": "Bafut",
+       "codeUnique": "R07-D38-A251"
+      },
+      {
+       "code": "A252",
+       "nom": "Santa",
+       "codeUnique": "R07-D38-A252"
+      }
+     ]
+    },
+    {
+     "code": "D39",
+     "nom": "Momo",
+     "chefLieu": "Mbengwi",
+     "arrondissements": [
+      {
+       "code": "A253",
+       "nom": "Batibo",
+       "codeUnique": "R07-D39-A253"
+      },
+      {
+       "code": "A254",
+       "nom": "Mbengwi",
+       "codeUnique": "R07-D39-A254"
+      },
+      {
+       "code": "A255",
+       "nom": "Njikwa",
+       "codeUnique": "R07-D39-A255"
+      },
+      {
+       "code": "A256",
+       "nom": "Andek",
+       "codeUnique": "R07-D39-A256"
+      },
+      {
+       "code": "A257",
+       "nom": "Widikum-Boffe",
+       "codeUnique": "R07-D39-A257"
+      }
+     ]
+    },
+    {
+     "code": "D40",
+     "nom": "Ngo-Ketunjia",
+     "chefLieu": "Ndop",
+     "arrondissements": [
+      {
+       "code": "A258",
+       "nom": "Ndop",
+       "codeUnique": "R07-D40-A258"
+      },
+      {
+       "code": "A259",
+       "nom": "Babessi",
+       "codeUnique": "R07-D40-A259"
+      },
+      {
+       "code": "A260",
+       "nom": "Balikumbat",
+       "codeUnique": "R07-D40-A260"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "code": "R08",
+   "nom": "OUEST",
+   "nomEn": "WEST",
+   "chefLieu": "Bafoussam",
+   "departements": [
+    {
+     "code": "D41",
+     "nom": "Bamboutos",
+     "chefLieu": "Mbouda",
+     "arrondissements": [
+      {
+       "code": "A261",
+       "nom": "Mbouda",
+       "codeUnique": "R08-D41-A261"
+      },
+      {
+       "code": "A262",
+       "nom": "Galim",
+       "codeUnique": "R08-D41-A262"
+      },
+      {
+       "code": "A263",
+       "nom": "Batcham",
+       "codeUnique": "R08-D41-A263"
+      },
+      {
+       "code": "A264",
+       "nom": "Babadjou",
+       "codeUnique": "R08-D41-A264"
+      }
+     ]
+    },
+    {
+     "code": "D42",
+     "nom": "Haut-Nkam",
+     "chefLieu": "Bafang",
+     "arrondissements": [
+      {
+       "code": "A265",
+       "nom": "Bafang",
+       "codeUnique": "R08-D42-A265"
+      },
+      {
+       "code": "A266",
+       "nom": "Bana",
+       "codeUnique": "R08-D42-A266"
+      },
+      {
+       "code": "A267",
+       "nom": "Bandja",
+       "codeUnique": "R08-D42-A267"
+      },
+      {
+       "code": "A268",
+       "nom": "Kekem",
+       "codeUnique": "R08-D42-A268"
+      },
+      {
+       "code": "A269",
+       "nom": "Bakou",
+       "codeUnique": "R08-D42-A269"
+      },
+      {
+       "code": "A270",
+       "nom": "Banka",
+       "codeUnique": "R08-D42-A270"
+      },
+      {
+       "code": "A271",
+       "nom": "Banwa",
+       "codeUnique": "R08-D42-A271"
+      }
+     ]
+    },
+    {
+     "code": "D43",
+     "nom": "Hauts-Plateaux",
+     "chefLieu": "Baham",
+     "arrondissements": [
+      {
+       "code": "A272",
+       "nom": "Baham",
+       "codeUnique": "R08-D43-A272"
+      },
+      {
+       "code": "A273",
+       "nom": "Bamendjou",
+       "codeUnique": "R08-D43-A273"
+      },
+      {
+       "code": "A274",
+       "nom": "Bangou",
+       "codeUnique": "R08-D43-A274"
+      },
+      {
+       "code": "A275",
+       "nom": "Batié",
+       "codeUnique": "R08-D43-A275"
+      }
+     ]
+    },
+    {
+     "code": "D44",
+     "nom": "Koung-Khi",
+     "chefLieu": "Bandjoun",
+     "arrondissements": [
+      {
+       "code": "A276",
+       "nom": "Pette-Bandjoun",
+       "codeUnique": "R08-D44-A276"
+      },
+      {
+       "code": "A277",
+       "nom": "Bayangam",
+       "codeUnique": "R08-D44-A277"
+      },
+      {
+       "code": "A278",
+       "nom": "Djebem",
+       "codeUnique": "R08-D44-A278"
+      }
+     ]
+    },
+    {
+     "code": "D45",
+     "nom": "Menoua",
+     "chefLieu": "Dschang",
+     "arrondissements": [
+      {
+       "code": "A279",
+       "nom": "Dschang",
+       "codeUnique": "R08-D45-A279"
+      },
+      {
+       "code": "A280",
+       "nom": "Penka-Michel",
+       "codeUnique": "R08-D45-A280"
+      },
+      {
+       "code": "A281",
+       "nom": "Fokoué",
+       "codeUnique": "R08-D45-A281"
+      },
+      {
+       "code": "A282",
+       "nom": "Nkong-Zem",
+       "codeUnique": "R08-D45-A282"
+      },
+      {
+       "code": "A283",
+       "nom": "Santchou",
+       "codeUnique": "R08-D45-A283"
+      },
+      {
+       "code": "A284",
+       "nom": "Fongo-Tongo",
+       "codeUnique": "R08-D45-A284"
+      }
+     ]
+    },
+    {
+     "code": "D46",
+     "nom": "Mifi",
+     "chefLieu": "Bafoussam",
+     "arrondissements": [
+      {
+       "code": "A285",
+       "nom": "Bafoussam 1er",
+       "codeUnique": "R08-D46-A285"
+      },
+      {
+       "code": "A286",
+       "nom": "Bafoussam 2e",
+       "codeUnique": "R08-D46-A286"
+      },
+      {
+       "code": "A287",
+       "nom": "Bafoussam 3e",
+       "codeUnique": "R08-D46-A287"
+      }
+     ]
+    },
+    {
+     "code": "D47",
+     "nom": "Ndé",
+     "chefLieu": "Bangangté",
+     "arrondissements": [
+      {
+       "code": "A288",
+       "nom": "Bangangté",
+       "codeUnique": "R08-D47-A288"
+      },
+      {
+       "code": "A289",
+       "nom": "Bazou",
+       "codeUnique": "R08-D47-A289"
+      },
+      {
+       "code": "A290",
+       "nom": "Tonga",
+       "codeUnique": "R08-D47-A290"
+      },
+      {
+       "code": "A291",
+       "nom": "Bassamba",
+       "codeUnique": "R08-D47-A291"
+      }
+     ]
+    },
+    {
+     "code": "D48",
+     "nom": "Noun",
+     "chefLieu": "Foumban",
+     "arrondissements": [
+      {
+       "code": "A292",
+       "nom": "Foumban",
+       "codeUnique": "R08-D48-A292"
+      },
+      {
+       "code": "A293",
+       "nom": "Foumbot",
+       "codeUnique": "R08-D48-A293"
+      },
+      {
+       "code": "A294",
+       "nom": "Malentouen",
+       "codeUnique": "R08-D48-A294"
+      },
+      {
+       "code": "A295",
+       "nom": "Massangam",
+       "codeUnique": "R08-D48-A295"
+      },
+      {
+       "code": "A296",
+       "nom": "Magba",
+       "codeUnique": "R08-D48-A296"
+      },
+      {
+       "code": "A297",
+       "nom": "Koutaba",
+       "codeUnique": "R08-D48-A297"
+      },
+      {
+       "code": "A298",
+       "nom": "Bangourain",
+       "codeUnique": "R08-D48-A298"
+      },
+      {
+       "code": "A299",
+       "nom": "Kouoptamo",
+       "codeUnique": "R08-D48-A299"
+      },
+      {
+       "code": "A300",
+       "nom": "Njimom",
+       "codeUnique": "R08-D48-A300"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "code": "R09",
+   "nom": "SUD",
+   "nomEn": "SOUTH",
+   "chefLieu": "Ebolowa",
+   "departements": [
+    {
+     "code": "D49",
+     "nom": "Dja-et-Lobo",
+     "chefLieu": "Sangmélima",
+     "arrondissements": [
+      {
+       "code": "A301",
+       "nom": "Bengbis",
+       "codeUnique": "R09-D49-A301"
+      },
+      {
+       "code": "A302",
+       "nom": "Djoum",
+       "codeUnique": "R09-D49-A302"
+      },
+      {
+       "code": "A303",
+       "nom": "Sangmélima",
+       "codeUnique": "R09-D49-A303"
+      },
+      {
+       "code": "A304",
+       "nom": "Zoétélé",
+       "codeUnique": "R09-D49-A304"
+      },
+      {
+       "code": "A305",
+       "nom": "Oveng",
+       "codeUnique": "R09-D49-A305"
+      },
+      {
+       "code": "A306",
+       "nom": "Mintom",
+       "codeUnique": "R09-D49-A306"
+      },
+      {
+       "code": "A307",
+       "nom": "Meyomessala",
+       "codeUnique": "R09-D49-A307"
+      },
+      {
+       "code": "A308",
+       "nom": "Meyomessi",
+       "codeUnique": "R09-D49-A308"
+      }
+     ]
+    },
+    {
+     "code": "D50",
+     "nom": "Mvila",
+     "chefLieu": "Ebolowa",
+     "arrondissements": [
+      {
+       "code": "A309",
+       "nom": "Ebolowa 1er",
+       "codeUnique": "R09-D50-A309"
+      },
+      {
+       "code": "A310",
+       "nom": "Ebolowa 2e",
+       "codeUnique": "R09-D50-A310"
+      },
+      {
+       "code": "A311",
+       "nom": "Biwong-Bané",
+       "codeUnique": "R09-D50-A311"
+      },
+      {
+       "code": "A312",
+       "nom": "Mvangan",
+       "codeUnique": "R09-D50-A312"
+      },
+      {
+       "code": "A313",
+       "nom": "Mengong",
+       "codeUnique": "R09-D50-A313"
+      },
+      {
+       "code": "A314",
+       "nom": "Ngoulémakong",
+       "codeUnique": "R09-D50-A314"
+      },
+      {
+       "code": "A315",
+       "nom": "Efoulan",
+       "codeUnique": "R09-D50-A315"
+      },
+      {
+       "code": "A316",
+       "nom": "Biwong-Bulu",
+       "codeUnique": "R09-D50-A316"
+      }
+     ]
+    },
+    {
+     "code": "D51",
+     "nom": "Océan",
+     "chefLieu": "Kribi",
+     "arrondissements": [
+      {
+       "code": "A317",
+       "nom": "Akom II",
+       "codeUnique": "R09-D51-A317"
+      },
+      {
+       "code": "A318",
+       "nom": "Campo",
+       "codeUnique": "R09-D51-A318"
+      },
+      {
+       "code": "A319",
+       "nom": "Kribi 1er",
+       "codeUnique": "R09-D51-A319"
+      },
+      {
+       "code": "A320",
+       "nom": "Kribi 2e",
+       "codeUnique": "R09-D51-A320"
+      },
+      {
+       "code": "A321",
+       "nom": "Lolodorf",
+       "codeUnique": "R09-D51-A321"
+      },
+      {
+       "code": "A322",
+       "nom": "Mvengue",
+       "codeUnique": "R09-D51-A322"
+      },
+      {
+       "code": "A323",
+       "nom": "Bipindi",
+       "codeUnique": "R09-D51-A323"
+      },
+      {
+       "code": "A324",
+       "nom": "Lokoundjé",
+       "codeUnique": "R09-D51-A324"
+      },
+      {
+       "code": "A325",
+       "nom": "Niété",
+       "codeUnique": "R09-D51-A325"
+      }
+     ]
+    },
+    {
+     "code": "D52",
+     "nom": "Vallée-du-Ntem",
+     "chefLieu": "Ambam",
+     "arrondissements": [
+      {
+       "code": "A326",
+       "nom": "Ambam",
+       "codeUnique": "R09-D52-A326"
+      },
+      {
+       "code": "A327",
+       "nom": "Ma'an",
+       "codeUnique": "R09-D52-A327"
+      },
+      {
+       "code": "A328",
+       "nom": "Olamzé",
+       "codeUnique": "R09-D52-A328"
+      },
+      {
+       "code": "A329",
+       "nom": "Kyé-Ossi",
+       "codeUnique": "R09-D52-A329"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "code": "R10",
+   "nom": "SUD-OUEST",
+   "nomEn": "SOUTH WEST",
+   "chefLieu": "Buea",
+   "departements": [
+    {
+     "code": "D53",
+     "nom": "Fako",
+     "chefLieu": "Limbé",
+     "arrondissements": [
+      {
+       "code": "A330",
+       "nom": "Muyuka",
+       "codeUnique": "R10-D53-A330"
+      },
+      {
+       "code": "A331",
+       "nom": "Tiko",
+       "codeUnique": "R10-D53-A331"
+      },
+      {
+       "code": "A332",
+       "nom": "Limbé 1er",
+       "codeUnique": "R10-D53-A332"
+      },
+      {
+       "code": "A333",
+       "nom": "Limbé 2e",
+       "codeUnique": "R10-D53-A333"
+      },
+      {
+       "code": "A334",
+       "nom": "Limbé 3e",
+       "codeUnique": "R10-D53-A334"
+      },
+      {
+       "code": "A335",
+       "nom": "Buéa",
+       "codeUnique": "R10-D53-A335"
+      },
+      {
+       "code": "A336",
+       "nom": "Idenau",
+       "codeUnique": "R10-D53-A336"
+      }
+     ]
+    },
+    {
+     "code": "D54",
+     "nom": "Koupé-Manengouba",
+     "chefLieu": "Bangem",
+     "arrondissements": [
+      {
+       "code": "A337",
+       "nom": "Bangem",
+       "codeUnique": "R10-D54-A337"
+      },
+      {
+       "code": "A338",
+       "nom": "Nguti",
+       "codeUnique": "R10-D54-A338"
+      },
+      {
+       "code": "A339",
+       "nom": "Tombel",
+       "codeUnique": "R10-D54-A339"
+      }
+     ]
+    },
+    {
+     "code": "D55",
+     "nom": "Lebialem",
+     "chefLieu": "Menji",
+     "arrondissements": [
+      {
+       "code": "A340",
+       "nom": "Fontem",
+       "codeUnique": "R10-D55-A340"
+      },
+      {
+       "code": "A341",
+       "nom": "Alou",
+       "codeUnique": "R10-D55-A341"
+      },
+      {
+       "code": "A342",
+       "nom": "Wabane",
+       "codeUnique": "R10-D55-A342"
+      }
+     ]
+    },
+    {
+     "code": "D56",
+     "nom": "Manyu",
+     "chefLieu": "Mamfé",
+     "arrondissements": [
+      {
+       "code": "A343",
+       "nom": "Akwaya",
+       "codeUnique": "R10-D56-A343"
+      },
+      {
+       "code": "A344",
+       "nom": "Mamfé",
+       "codeUnique": "R10-D56-A344"
+      },
+      {
+       "code": "A345",
+       "nom": "Eyumodjock",
+       "codeUnique": "R10-D56-A345"
+      },
+      {
+       "code": "A346",
+       "nom": "Tinto",
+       "codeUnique": "R10-D56-A346"
+      }
+     ]
+    },
+    {
+     "code": "D57",
+     "nom": "Meme",
+     "chefLieu": "Kumba",
+     "arrondissements": [
+      {
+       "code": "A347",
+       "nom": "Kumba 1er",
+       "codeUnique": "R10-D57-A347"
+      },
+      {
+       "code": "A348",
+       "nom": "Kumba 2e",
+       "codeUnique": "R10-D57-A348"
+      },
+      {
+       "code": "A349",
+       "nom": "Kumba 3e",
+       "codeUnique": "R10-D57-A349"
+      },
+      {
+       "code": "A350",
+       "nom": "Konye",
+       "codeUnique": "R10-D57-A350"
+      },
+      {
+       "code": "A351",
+       "nom": "Bonge",
+       "codeUnique": "R10-D57-A351"
+      }
+     ]
+    },
+    {
+     "code": "D58",
+     "nom": "Ndian",
+     "chefLieu": "Mundemba",
+     "arrondissements": [
+      {
+       "code": "A352",
+       "nom": "Bamusso",
+       "codeUnique": "R10-D58-A352"
+      },
+      {
+       "code": "A353",
+       "nom": "Ekondo-Titi",
+       "codeUnique": "R10-D58-A353"
+      },
+      {
+       "code": "A354",
+       "nom": "Isangele",
+       "codeUnique": "R10-D58-A354"
+      },
+      {
+       "code": "A355",
+       "nom": "Mundemba",
+       "codeUnique": "R10-D58-A355"
+      },
+      {
+       "code": "A356",
+       "nom": "Kombo Abedimo",
+       "codeUnique": "R10-D58-A356"
+      },
+      {
+       "code": "A357",
+       "nom": "Kombo Idinti",
+       "codeUnique": "R10-D58-A357"
+      },
+      {
+       "code": "A358",
+       "nom": "Idabato",
+       "codeUnique": "R10-D58-A358"
+      },
+      {
+       "code": "A359",
+       "nom": "Dikome-Balue",
+       "codeUnique": "R10-D58-A359"
+      },
+      {
+       "code": "A360",
+       "nom": "Toko",
+       "codeUnique": "R10-D58-A360"
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}
