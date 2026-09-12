@@ -9,7 +9,7 @@
     "start": "nest start",
     "start:dev": "nest start --watch",
     "start:prod": "node dist/main.js",
-    "lint": "eslint \"{src,test}/**/*.ts\" --fix",
+    "lint": "eslint src prisma",
     "test": "jest",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
@@ -17,7 +17,8 @@
     "prisma:studio": "prisma studio",
     "seed": "ts-node prisma/seed.ts",
     "seed:prod": "node dist/prisma/seed.js",
-    "import:decoupage": "ts-node prisma/import-decoupage.ts"
+    "import:decoupage": "ts-node prisma/import-decoupage.ts",
+    "lint:fix": "eslint src prisma --fix"
   },
   "prisma": {
     "seed": "ts-node prisma/seed.ts",
@@ -49,6 +50,7 @@
     "rxjs": "^7.8.1"
   },
   "devDependencies": {
+    "@eslint/js": "^9.39.5",
     "@nestjs/cli": "^10.4.9",
     "@nestjs/schematics": "^10.2.3",
     "@nestjs/testing": "^10.4.15",
@@ -57,12 +59,14 @@
     "@types/multer": "^1.4.12",
     "@types/node": "^22.10.2",
     "@types/passport-jwt": "^4.0.1",
+    "eslint": "^9.39.5",
     "jest": "^29.7.0",
     "prisma": "^5.22.0",
     "ts-jest": "^29.2.5",
     "ts-node": "^10.9.2",
     "tsconfig-paths": "^4.2.0",
-    "typescript": "^5.7.2"
+    "typescript": "^5.7.2",
+    "typescript-eslint": "^8.70.0"
   },
   "jest": {
     "moduleFileExtensions": [

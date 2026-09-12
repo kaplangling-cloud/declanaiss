@@ -26,14 +26,28 @@ export class StorageService implements OnModuleInit {
     this.logger.log(`Stockage initialise dans ${this.root}`);
   }
 
+  /**
+   * Resout un chemin relatif sous la racine de stockage.
+   * La comparaison porte sur le chemin relatif calcule, et non sur un prefixe
+   * de chaine : `<root>-autre/x` commence par `<root>` sans etre dedans.
+   */
   private chemin(relatif: string): string {
     const abs = path.resolve(this.root, relatif);
-    if (!abs.startsWith(this.root)) throw new Error('Chemin de stockage invalide');
+    const rel = path.relative(this.root, abs);
+    if (rel === '' || rel.startsWith('..') || path.isAbsolute(rel)) {
+      throw new Error('Chemin de stockage invalide');
+    }
     return abs;
   }
 
+  /** Ne conserve d'un nom televerse qu'un segment sans separateur ni `..`. */
+  private static nomSur(nom: string): string {
+    const base = path.basename(nom).replace(/[^a-zA-Z0-9._-]/g, '_').replace(/^\.+/, '_').slice(0, 80);
+    return base || 'piece';
+  }
+
   async ecrirePieceChiffree(declarationId: string, nomFichier: string, data: Buffer) {
-    const relatif = path.join('pieces', declarationId, `${Date.now()}-${nomFichier}.enc`);
+    const relatif = path.join('pieces', declarationId, `${Date.now()}-${StorageService.nomSur(nomFichier)}.enc`);
     const abs = this.chemin(relatif);
     await fs.mkdir(path.dirname(abs), { recursive: true });
     await fs.writeFile(abs, this.crypto.chiffrerBuffer(data), { mode: 0o600 });

@@ -22,25 +22,47 @@ export class AuthService {
     private readonly audit: AuditService,
   ) {}
 
+  /** Hash jetable servant a egaliser le temps de reponse des echecs. */
+  private hashFactice?: string;
+
+  /**
+   * argon2 est volontairement lent : ne pas l'executer lorsque le compte est
+   * inconnu rendrait l'echec mesurablement plus rapide et permettrait
+   * d'enumerer les adresses. On verifie donc contre un hash jetable.
+   */
+  private async verifierFactice(motDePasse: string): Promise<void> {
+    this.hashFactice ??= await argon2.hash(this.crypto.tokenOpaque(32));
+    await argon2.verify(this.hashFactice, motDePasse).catch(() => false);
+  }
+
   async login(email: string, motDePasse: string, ctx: ContexteRequete) {
     const user = await this.prisma.user.findUnique({
       where: { email: email.toLowerCase().trim() },
       include: { centre: { select: { id: true, nom: true, code: true } }, mairie: { select: { id: true, nom: true, code: true } } },
     });
 
-    // Reponse identique que le compte existe ou non (anti-enumeration)
+    // Reponse identique que le compte existe ou non (anti-enumeration) :
+    // meme message, et meme cout de calcul (cf. verifierFactice).
     const echec = () => new UnauthorizedException('Identifiants invalides');
 
     if (!user || !user.actif) {
+      await this.verifierFactice(motDePasse);
       await this.audit.journaliser({
         entite: 'User', entiteId: user?.id ?? 'inconnu', action: ActionAudit.ECHEC_CONNEXION,
-        metadonnees: { email }, contexte: ctx,
+        metadonnees: { email, raison: user ? 'compte inactif' : 'compte inconnu' }, contexte: ctx,
       });
       throw echec();
     }
 
     if (user.bloqueJusquA && user.bloqueJusquA > new Date()) {
-      throw new UnauthorizedException(`Compte temporairement bloque jusqu'a ${user.bloqueJusquA.toISOString()}`);
+      // Le blocage n'est pas divulgue : l'annoncer revelerait que l'adresse
+      // correspond a un compte existant. Le motif reste dans l'audit.
+      await this.verifierFactice(motDePasse);
+      await this.audit.journaliser({
+        entite: 'User', entiteId: user.id, action: ActionAudit.ECHEC_CONNEXION,
+        metadonnees: { raison: 'compte bloque', bloqueJusquA: user.bloqueJusquA.toISOString() }, contexte: ctx,
+      });
+      throw echec();
     }
 
     const ok = await argon2.verify(user.motDePasseHash, motDePasse);

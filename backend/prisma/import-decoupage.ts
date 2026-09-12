@@ -13,8 +13,25 @@
  *     signalee, jamais retiree (des declarations peuvent y etre rattachees).
  */
 import { PrismaClient } from '@prisma/client';
-import { readFileSync } from 'fs';
+import { existsSync, readFileSync } from 'fs';
 import * as path from 'path';
+
+/**
+ * Localise un fichier de reference, que le script soit execute par ts-node
+ * (depuis `prisma/`) ou compile (depuis `dist/prisma/`, le dossier `prisma/`
+ * etant alors a la racine de l'image).
+ */
+function cheminDonnees(nom: string): string {
+  const candidats = [
+    path.join(__dirname, 'data', nom),
+    path.join(__dirname, '..', '..', 'prisma', 'data', nom),
+  ];
+  const trouve = candidats.find((c) => existsSync(c));
+  if (!trouve) {
+    throw new Error(`Fichier de reference introuvable : ${nom} (cherche dans ${candidats.join(' | ')})`);
+  }
+  return trouve;
+}
 
 interface FichierDecoupage {
   source: string;
@@ -44,8 +61,7 @@ const cle = (s: string) =>
 
 /** Importe le decoupage dans la base ouverte par `prisma`. Idempotent. */
 export async function importerDecoupage(prisma: PrismaClient) {
-  const fichier = path.join(__dirname, 'data', 'decoupage-administratif.json');
-  const data: FichierDecoupage = JSON.parse(readFileSync(fichier, 'utf-8'));
+  const data: FichierDecoupage = JSON.parse(readFileSync(cheminDonnees('decoupage-administratif.json'), 'utf-8'));
 
   console.log(`Source : ${data.source}`);
   const bilan = { regions: [0, 0], departements: [0, 0], arrondissements: [0, 0] }; // [crees, mis a jour]

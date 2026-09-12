@@ -26,7 +26,14 @@ export class VerificationService {
   constructor(private readonly prisma: PrismaService) {}
 
   async verifier(reference: string, ctx: ContexteRequete): Promise<ResultatVerification> {
-    const ref = decodeURIComponent(reference).trim();
+    // Le numero d'acte contient des "/" : il arrive encode dans le chemin.
+    // Une sequence d'echappement invalide ne doit pas produire une erreur 500.
+    let ref: string;
+    try {
+      ref = decodeURIComponent(reference).trim();
+    } catch {
+      ref = reference.trim();
+    }
     let resultat: ResultatVerification = { statut: 'INTROUVABLE', verifieLe: new Date().toISOString() };
 
     if (ref.length >= 6 && ref.length <= 80) {

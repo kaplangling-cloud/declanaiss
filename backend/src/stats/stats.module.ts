@@ -78,16 +78,34 @@ export class StatsService {
     return [...agg.values()].sort((a, b) => a.periode.localeCompare(b.periode));
   }
 
+  /**
+   * Echappement CSV : un nom de centre contenant `;`, un guillemet ou un saut
+   * de ligne ne doit pas decaler les colonnes, et une valeur commencant par
+   * `=`, `+`, `-` ou `@` ne doit pas etre interpretee comme une formule par le
+   * tableur qui l'ouvre.
+   */
+  private static champCsv(valeur: string | number | null | undefined): string {
+    if (valeur === null || valeur === undefined) return '';
+    let v = String(valeur);
+    if (/^[=+\-@\t\r]/.test(v)) v = `'${v}`;
+    return /[";\r\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v;
+  }
+
   /** Export CSV agrege (aucune donnee nominative). */
   async exportCsv(f: FiltresStatsDto, acteur: UtilisateurCourant, ctx: ContexteRequete): Promise<string> {
     const s = await this.synthese(f, acteur);
-    const l: string[] = ['section;cle;total;complement'];
-    s.parCentre.forEach((c) => l.push(`centre;${c.centre?.code ?? ''} ${c.centre?.nom ?? ''};${c.total};poids moyen ${c.poidsMoyen ?? ''} g`));
-    s.parPeriode.forEach((p) => l.push(`periode;${p.periode};${p.total};voie basse ${p.voieBasse} / cesarienne ${p.cesarienne}`));
-    s.parModeAccouchement.forEach((m) => l.push(`mode_accouchement;${m.cle};${m.total};`));
-    s.parTerme.forEach((t) => l.push(`terme;${t.cle};${t.total};`));
-    s.parSexe.forEach((t) => l.push(`sexe;${t.cle};${t.total};`));
-    s.parStatut.forEach((t) => l.push(`statut;${t.cle};${t.total};`));
+    const c$ = StatsService.champCsv;
+    const ligne = (...champs: Array<string | number | null | undefined>) => champs.map(c$).join(';');
+
+    const l: string[] = [ligne('section', 'cle', 'total', 'complement')];
+    s.parCentre.forEach((c) =>
+      l.push(ligne('centre', `${c.centre?.code ?? ''} ${c.centre?.nom ?? ''}`.trim(), c.total, `poids moyen ${c.poidsMoyen ?? ''} g`)),
+    );
+    s.parPeriode.forEach((p) => l.push(ligne('periode', p.periode, p.total, `voie basse ${p.voieBasse} / cesarienne ${p.cesarienne}`)));
+    s.parModeAccouchement.forEach((m) => l.push(ligne('mode_accouchement', m.cle, m.total, '')));
+    s.parTerme.forEach((t) => l.push(ligne('terme', t.cle, t.total, '')));
+    s.parSexe.forEach((t) => l.push(ligne('sexe', t.cle, t.total, '')));
+    s.parStatut.forEach((t) => l.push(ligne('statut', t.cle, t.total, '')));
     await this.audit.journaliser({ entite: 'Stats', entiteId: 'export', action: ActionAudit.EXPORT, acteur, metadonnees: { filtres: f as any, lignes: l.length }, contexte: ctx });
     return '﻿' + l.join('\r\n');
   }

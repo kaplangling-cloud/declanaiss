@@ -25,7 +25,10 @@ export class CryptoService {
 
   private loadKey(value: string | undefined, name: string): Buffer {
     if (!value) throw new InternalServerErrorException(`Cle ${name} absente`);
-    // Accepte une cle base64 de 32 octets ; sinon derive par HKDF pour le dev.
+    // Cas nominal : cle base64 de 32 octets (openssl rand -base64 32).
+    // A defaut, la valeur est condensee en 256 bits pour rester utilisable en
+    // developpement — ce n'est pas une derivation robuste, d'ou l'exigence
+    // d'une vraie cle en production (cf. config/configuration.ts).
     const raw = Buffer.from(value, 'base64');
     if (raw.length === 32) return raw;
     return crypto.createHash('sha256').update(value, 'utf8').digest();

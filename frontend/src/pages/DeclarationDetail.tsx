@@ -18,9 +18,11 @@ export default function DeclarationDetail() {
   const { data: d, isLoading } = useQuery({ queryKey: ['declaration', id], queryFn: () => api<Declaration>(`/declarations/${id}`) });
 
   const rafraichir = () => { qc.invalidateQueries({ queryKey: ['declaration', id] }); setModale(null); setErreur(null); };
-  const action = (chemin: string, body?: unknown) => useMutation({ mutationFn: () => api(chemin, { method: 'POST', body }), onSuccess: rafraichir, onError: (e) => setErreur((e as Error).message) });
-  const valider = action(`/declarations/${id}/valider`);
-  const soumettre = action(`/declarations/${id}/soumettre`);
+  const echec = (e: unknown) => setErreur((e as Error).message);
+  // Un hook ne peut pas etre appele depuis une fabrique : chaque mutation est
+  // declaree explicitement pour garantir un ordre de hooks stable.
+  const valider = useMutation({ mutationFn: () => api(`/declarations/${id}/valider`, { method: 'POST' }), onSuccess: rafraichir, onError: echec });
+  const soumettre = useMutation({ mutationFn: () => api(`/declarations/${id}/soumettre`, { method: 'POST' }), onSuccess: rafraichir, onError: echec });
   const rejeter = useMutation({ mutationFn: (motif: string) => api(`/declarations/${id}/rejeter`, { method: 'POST', body: { motif } }), onSuccess: rafraichir, onError: (e) => setErreur((e as Error).message) });
   const editerActe = useMutation({ mutationFn: (body: Record<string, string>) => api(`/actes/declaration/${id}`, { method: 'POST', body }), onSuccess: rafraichir, onError: (e) => setErreur((e as Error).message) });
   const demanderRectif = useMutation({ mutationFn: (body: unknown) => api(`/declarations/${id}/rectifications`, { method: 'POST', body }), onSuccess: rafraichir, onError: (e) => setErreur((e as Error).message) });
