@@ -1,4 +1,4 @@
-import { Controller, Get, Injectable, Module, Param } from '@nestjs/common';
+import { BadRequestException, Controller, Get, Injectable, Module, Param, Query } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { StatutDeclaration } from '@prisma/client';
@@ -75,6 +75,21 @@ export class VerificationService {
 @Controller('verification')
 export class VerificationController {
   constructor(private readonly verification: VerificationService) {}
+
+  /**
+   * Forme nominale : la reference passe en parametre de requete.
+   * Indispensable pour un numero d'acte (CODE/AAAA/NNNNN) : encode dans le
+   * chemin, son "/" est redecode avant le routage et la route ne correspond
+   * plus. La forme /verification/:reference reste servie pour les liens de
+   * QR codes deja imprimes, qui ne portent qu'un jeton opaque.
+   */
+  @Public()
+  @Throttle({ default: { limit: 20, ttl: 60_000 } })
+  @Get()
+  verifierParRequete(@Query('reference') reference: string, @RequestContext() ctx: ContexteRequete) {
+    if (!reference) throw new BadRequestException('Reference absente');
+    return this.verification.verifier(reference, ctx);
+  }
 
   @Public()
   @Throttle({ default: { limit: 20, ttl: 60_000 } })

@@ -18,7 +18,9 @@ export default function VerifierPublic() {
   const verifier = async (ref: string) => {
     if (!ref.trim()) return;
     setEnCours(true); setErreur(null); setResultat(null);
-    try { setResultat(await api<Resultat>(`/verification/${encodeURIComponent(ref.trim())}`)); }
+    // Parametre de requete : un numero d'acte contient des "/" et ne peut pas
+    // voyager dans le chemin, meme encode.
+    try { setResultat(await api<Resultat>(`/verification?reference=${encodeURIComponent(ref.trim())}`)); }
     catch (e) { setErreur((e as Error).message); }
     finally { setEnCours(false); }
   };

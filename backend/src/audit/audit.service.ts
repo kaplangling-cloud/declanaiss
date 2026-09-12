@@ -63,9 +63,54 @@ export class AuditService {
       hashPrecedent: precedent?.hash ?? null,
     };
 
-    const hash = AuditService.hacher({ ...payload, horodatage: new Date().toISOString() });
+    // L'horodatage entre dans le hash : il doit etre celui qui est persiste,
+    // sans quoi l'empreinte ne serait pas recalculable et une alteration du
+    // contenu d'une ligne resterait indetectable.
+    const horodatage = new Date();
+    const hash = AuditService.hacher(AuditService.empreinte(payload, horodatage));
 
-    await client.auditLog.create({ data: { ...payload, hash } });
+    await client.auditLog.create({ data: { ...payload, hash, createdAt: horodatage } });
+  }
+
+  /**
+   * Represente une entree sous la forme exactement hachee a l'ecriture.
+   * L'ordre des cles est significatif (JSON.stringify) : ne pas le modifier
+   * sans invalider les empreintes deja enregistrees.
+   */
+  private static empreinte(
+    e: {
+      entite: string;
+      entiteId: string;
+      action: ActionAudit;
+      declarationId: string | null;
+      acteurId: string | null;
+      acteurRole: Role | null;
+      acteurEmail: string | null;
+      valeursAvant?: unknown;
+      valeursApres?: unknown;
+      metadonnees?: unknown;
+      ip: string | null;
+      userAgent: string | null;
+      hashPrecedent: string | null;
+    },
+    horodatage: Date,
+  ) {
+    return {
+      entite: e.entite,
+      entiteId: e.entiteId,
+      action: e.action,
+      declarationId: e.declarationId,
+      acteurId: e.acteurId,
+      acteurRole: e.acteurRole,
+      acteurEmail: e.acteurEmail,
+      valeursAvant: e.valeursAvant ?? undefined,
+      valeursApres: e.valeursApres ?? undefined,
+      metadonnees: e.metadonnees ?? undefined,
+      ip: e.ip,
+      userAgent: e.userAgent,
+      hashPrecedent: e.hashPrecedent,
+      horodatage: horodatage.toISOString(),
+    };
   }
 
   /** Journalise un acces en lecture a des donnees personnelles. */
@@ -93,17 +138,42 @@ export class AuditService {
     });
   }
 
-  /** Recalcule la chaine et signale la premiere rupture eventuelle. */
-  async verifierChaine(): Promise<{ integre: boolean; total: number; ruptureSequence?: string }> {
+  /**
+   * Recalcule l'empreinte de chaque entree et verifie le chainage.
+   * Le parcours ne s'interrompt pas a la premiere anomalie : une seule ligne
+   * douteuse ne doit pas laisser les suivantes non controlees.
+   *
+   * `CHAINAGE` signale une insertion, une suppression ou un reordonnancement ;
+   * `CONTENU` signale la modification d'une ligne existante.
+   */
+  async verifierChaine(): Promise<{
+    integre: boolean;
+    total: number;
+    anomalies: Array<{ sequence: string; nature: 'CHAINAGE' | 'CONTENU'; createdAt: Date }>;
+    /** Premiere rupture de chainage, pour compatibilite d'affichage. */
+    ruptureSequence?: string;
+  }> {
     const lignes = await this.prisma.auditLog.findMany({ orderBy: { sequence: 'asc' } });
+    const anomalies: Array<{ sequence: string; nature: 'CHAINAGE' | 'CONTENU'; createdAt: Date }> = [];
     let precedent: string | null = null;
+
     for (const l of lignes) {
       if (l.hashPrecedent !== precedent) {
-        return { integre: false, total: lignes.length, ruptureSequence: l.sequence.toString() };
+        anomalies.push({ sequence: l.sequence.toString(), nature: 'CHAINAGE', createdAt: l.createdAt });
+      }
+      const attendu = AuditService.hacher(AuditService.empreinte(l, l.createdAt));
+      if (attendu !== l.hash) {
+        anomalies.push({ sequence: l.sequence.toString(), nature: 'CONTENU', createdAt: l.createdAt });
       }
       precedent = l.hash;
     }
-    return { integre: true, total: lignes.length };
+
+    return {
+      integre: anomalies.length === 0,
+      total: lignes.length,
+      anomalies,
+      ruptureSequence: anomalies.find((a) => a.nature === 'CHAINAGE')?.sequence,
+    };
   }
 
   async rechercher(filtres: {
