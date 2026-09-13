@@ -16,3 +16,6 @@ frontend/dev-dist/
 
 # Artefacts TypeScript
 *.tsbuildinfo
+
+# Documents sources porteurs de donnees personnelles reelles : jamais versionnes
+A1.jpeg

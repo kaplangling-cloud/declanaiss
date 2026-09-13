@@ -79,7 +79,7 @@ Le frontend est une PWA : saisie en IndexedDB, file de synchronisation différé
 
 ### Acte de naissance (PDF)
 
-`PdfActeService` reproduit le formulaire officiel camerounais bilingue relevé sur `A1.jpeg` : en-tête FR/EN sur deux colonnes, rubriques « libellé FR - label EN » suivies de pointillés, dates en toutes lettres (`dix-sept février mille neuf cent quatre-vingt-dix`), bloc de clôture et signatures. S'y ajoutent un QR vers la page publique de vérification et un code-barres Code 128 du numéro de déclaration.
+`PdfActeService` reproduit le formulaire officiel camerounais bilingue, relevé sur un acte réel (`A1.jpeg`, volontairement **hors du dépôt** : il porte les noms et numéros de CNI de personnes réelles — ne jamais le versionner, ni reprendre ses données dans les tests ou exemples) : en-tête FR/EN sur deux colonnes, rubriques « libellé FR - label EN » suivies de pointillés, dates en toutes lettres (`dix-sept février mille neuf cent quatre-vingt-dix`), bloc de clôture et signatures. S'y ajoutent un QR vers la page publique de vérification et un code-barres Code 128 du numéro de déclaration.
 
 L'en-tête porte le rattachement administratif de **la mairie qui dresse l'acte**, jamais celui du centre de santé ; `A - At` porte en revanche le lieu de l'accouchement.
 
