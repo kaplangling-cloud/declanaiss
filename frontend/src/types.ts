@@ -93,5 +93,6 @@ export interface BrouillonLocal {
   erreurs?: string[];
   serveur?: Declaration;         // etat serveur en cas de conflit
   statutServeur?: Statut;
+  forcer?: boolean;              // ecrasement demande pour ce seul element (resolution de conflit)
   numeroDeclaration?: string | null;
 }

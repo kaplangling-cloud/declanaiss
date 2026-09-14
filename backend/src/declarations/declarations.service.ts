@@ -22,6 +22,8 @@ const CHAMPS_DATE = [
   'enfantDateNaissance', 'pereDateNaissance', 'pereCniDateDelivrance', 'mereDateNaissance', 'mereCniDateDelivrance',
 ] as const;
 const MIME_AUTORISES = ['image/jpeg', 'image/png', 'application/pdf'];
+/** Champs de CNI tels qu'ils circulent en clair dans l'API (chiffres au repos). */
+const CHAMPS_CNI = ['pereCniNumero', 'mereCniNumero'] as const;
 
 const INCLUDE_LISTE = {
   centre: { select: { id: true, code: true, nom: true } },
@@ -138,6 +140,38 @@ export class DeclarationsService {
     return reste;
   }
 
+  /**
+   * Les valeurs d'une rectification sont conservees en JSON : les CNI doivent y
+   * etre chiffrees comme dans la declaration elle-meme.
+   */
+  private chiffrerCniValeurs(valeurs: Record<string, unknown>): Record<string, unknown> {
+    const sortie = { ...valeurs };
+    for (const c of CHAMPS_CNI) {
+      if (typeof sortie[c] === 'string') sortie[c] = this.crypto.chiffrer(sortie[c] as string);
+    }
+    return sortie;
+  }
+
+  /** Inverse de chiffrerCniValeurs ; tolere une valeur anterieure enregistree en clair. */
+  private dechiffrerCniValeurs(valeurs: Record<string, unknown>): Record<string, unknown> {
+    const sortie = { ...valeurs };
+    for (const c of CHAMPS_CNI) {
+      const v = sortie[c];
+      if (typeof v === 'string' && v.startsWith('v1:')) sortie[c] = this.crypto.dechiffrer(v);
+    }
+    return sortie;
+  }
+
+  /** Presente les CNI d'une rectification selon le role, comme mapperSortie le fait pour la declaration. */
+  private presenterCni(valeurs: Prisma.JsonValue, peutVoir: boolean): Prisma.JsonValue {
+    if (!valeurs || typeof valeurs !== 'object' || Array.isArray(valeurs)) return valeurs;
+    const objet = valeurs as Record<string, unknown>;
+    if (!CHAMPS_CNI.some((c) => objet[c] !== undefined && objet[c] !== null)) return valeurs;
+    const sortie = this.dechiffrerCniValeurs(objet);
+    if (!peutVoir) for (const c of CHAMPS_CNI) if (sortie[c]) sortie[c] = '••••';
+    return sortie as unknown as Prisma.JsonValue;
+  }
+
   // =====================================================================
   //  CRUD centre
   // =====================================================================
@@ -197,7 +231,13 @@ export class DeclarationsService {
       },
     });
     if (!d) throw new NotFoundException('Declaration introuvable');
-    return this.mapperSortie(d, acteur, ctx);
+    const peutVoirCni = acteur.role !== Role.SECRETAIRE_MAIRIE;
+    const rectifications = d.rectifications.map((r) => ({
+      ...r,
+      valeursAvant: this.presenterCni(r.valeursAvant, peutVoirCni),
+      valeursApres: this.presenterCni(r.valeursApres, peutVoirCni),
+    }));
+    return this.mapperSortie({ ...d, rectifications }, acteur, ctx);
   }
 
   async creer(dto: CreerDeclarationDto, acteur: UtilisateurCourant, ctx: ContexteRequete) {
@@ -396,7 +436,12 @@ export class DeclarationsService {
       const modifiable = ([StatutDeclaration.BROUILLON, StatutDeclaration.REJETEE] as StatutDeclaration[]).includes(existante.statut)
         || (existante.statut === StatutDeclaration.SOUMISE && !!existante.dateLimiteModification && existante.dateLimiteModification > new Date());
 
-      if (existante.version !== el.versionBase && !(el.forcer && existante.statut === StatutDeclaration.BROUILLON)) {
+      // versionBase 0 : le poste n'a jamais recu de version serveur. Si la copie serveur
+      // est restee a sa version initiale, elle provient de ce meme poste (le clientUuid
+      // lui est propre) — typiquement un envoi cree puis refuse a la soumission. Ce
+      // n'est pas un conflit : sans cela, renvoyer le dossier corrige en signalait un.
+      const versionBase = el.versionBase === 0 && existante.version === 1 ? 1 : el.versionBase;
+      if (existante.version !== versionBase && !(el.forcer && existante.statut === StatutDeclaration.BROUILLON)) {
         // Double saisie / modification concurrente : on renvoie l'etat serveur, le client arbitre.
         return {
           clientUuid: el.clientUuid, resultat: 'CONFLIT' as const, id: existante.id, version: existante.version,
@@ -452,8 +497,15 @@ export class DeclarationsService {
   async retirerPiece(id: string, pieceId: string, acteur: UtilisateurCourant, ctx: ContexteRequete) {
     const d = await this.charger(id, acteur);
     this.assurerModifiable(d, acteur);
+    // La piece doit appartenir a la declaration du perimetre : sans ce filtre,
+    // l'identifiant d'une piece d'un autre dossier — voire d'un autre centre — etait accepte.
+    const piece = await this.prisma.pieceJointe.findFirst({
+      where: { id: pieceId, declarationId: d.id, supprimeLe: null },
+      select: { id: true },
+    });
+    if (!piece) throw new NotFoundException('Piece introuvable');
     return this.prisma.$transaction(async (tx) => {
-      await tx.pieceJointe.update({ where: { id: pieceId }, data: { supprimeLe: new Date() } });
+      await tx.pieceJointe.update({ where: { id: piece.id }, data: { supprimeLe: new Date() } });
       await this.audit.journaliser({ entite: 'PieceJointe', entiteId: pieceId, declarationId: d.id, action: ActionAudit.MODIFICATION, acteur, metadonnees: { supprimee: true }, contexte: ctx }, tx);
       return { ok: true };
     });
@@ -469,12 +521,31 @@ export class DeclarationsService {
     if (!([StatutDeclaration.VERROUILLEE, StatutDeclaration.VALIDEE] as StatutDeclaration[]).includes(d.statut)) {
       throw new BadRequestException('La rectification ne concerne que les declarations verrouillees ou validees');
     }
-    const valeursAvant = Object.fromEntries(dto.champsCibles.map((c) => [c, (this.nettoyerPourAudit(d) as any)[c] ?? null]));
+    // Chaque champ cible doit recevoir une nouvelle valeur. valeursApres etant valide
+    // contre le DTO de declaration, la regle borne aussi les champs rectifiables aux
+    // seules donnees de la declaration.
+    const valeursProposees = { ...dto.valeursApres } as Record<string, unknown>;
+    const cibles = [...new Set(dto.champsCibles)];
+    if (!cibles.length) throw new BadRequestException('Au moins un champ a rectifier est requis');
+    const sansValeur = cibles.filter((c) => valeursProposees[c] === undefined);
+    if (sansValeur.length) {
+      throw new BadRequestException({ message: 'Chaque champ cible doit recevoir une nouvelle valeur', code: 'CHAMPS_SANS_VALEUR', champs: sansValeur });
+    }
+
+    // Les CNI ne sont jamais conservees en clair : valeur avant reprise sous sa forme
+    // chiffree, valeur apres chiffree avant enregistrement.
+    const actuel = d as unknown as Record<string, unknown>;
+    const valeursAvant = Object.fromEntries(
+      cibles.map((c) => [c, (CHAMPS_CNI as readonly string[]).includes(c) ? actuel[`${c}Chiffre`] ?? null : actuel[c] ?? null]),
+    );
+    const valeursApres = this.chiffrerCniValeurs(Object.fromEntries(cibles.map((c) => [c, valeursProposees[c]])));
     return this.prisma.$transaction(async (tx) => {
       const r = await tx.rectification.create({
         data: {
-          declarationId: d.id, motif: dto.motif, champsCibles: dto.champsCibles, referenceLegale: dto.referenceLegale,
-          valeursAvant, valeursApres: dto.valeursApres as Prisma.InputJsonValue, demandeParId: acteur.id,
+          declarationId: d.id, motif: dto.motif, champsCibles: cibles, referenceLegale: dto.referenceLegale,
+          valeursAvant: valeursAvant as unknown as Prisma.InputJsonValue,
+          valeursApres: valeursApres as unknown as Prisma.InputJsonValue,
+          demandeParId: acteur.id,
         },
       });
       await this.audit.journaliser({ entite: 'Rectification', entiteId: r.id, declarationId: d.id, action: ActionAudit.RECTIFICATION, acteur, metadonnees: { statut: r.statut, motif: dto.motif }, contexte: ctx }, tx);
@@ -497,9 +568,19 @@ export class DeclarationsService {
       }
 
       // Application : uniquement les champs cibles declares
-      const valeursApres = (r.valeursApres ?? {}) as Record<string, unknown>;
+      const valeursApres = this.dechiffrerCniValeurs((r.valeursApres ?? {}) as Record<string, unknown>);
       const payload: Record<string, unknown> = {};
       for (const c of r.champsCibles) if (c in valeursApres) payload[c] = valeursApres[c];
+
+      // Une rectification ne peut pas rendre la declaration incoherente : les regles de
+      // la soumission s'appliquent a l'etat qui resulterait de son application.
+      validerPourSoumission({
+        ...d,
+        pereCniNumero: this.crypto.dechiffrer(d.pereCniNumeroChiffre),
+        mereCniNumero: this.crypto.dechiffrer(d.mereCniNumeroChiffre),
+        ...payload,
+      } as Parameters<typeof validerPourSoumission>[0]);
+
       const apres = await tx.declaration.update({ where: { id: d.id }, data: { ...this.mapperEntree(payload as DeclarationPayloadDto), version: { increment: 1 } } });
       const appliquee = await tx.rectification.update({ where: { id: r.id }, data: { statut: StatutRectification.APPLIQUEE, decideParId: acteur.id, decideLe: new Date(), appliqueeLe: new Date(), commentaireDecision: dto.commentaire } });
       await this.audit.journaliser({

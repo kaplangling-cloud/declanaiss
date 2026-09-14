@@ -156,19 +156,22 @@ export class AuthService {
     return { ok: true };
   }
 
-  async changerMotDePasse(acteur: UtilisateurCourant, ancien: string, nouveau: string) {
+  async changerMotDePasse(acteur: UtilisateurCourant, ancien: string, nouveau: string, ctx: ContexteRequete) {
     const user = await this.prisma.user.findUniqueOrThrow({ where: { id: acteur.id } });
     if (!(await argon2.verify(user.motDePasseHash, ancien))) {
       throw new BadRequestException('Ancien mot de passe incorrect');
     }
-    await this.prisma.$transaction([
-      this.prisma.user.update({
-        where: { id: acteur.id },
-        data: { motDePasseHash: await argon2.hash(nouveau), doitChangerMotDePasse: false },
-      }),
+    const hash = await argon2.hash(nouveau);
+    await this.prisma.$transaction(async (tx) => {
+      await tx.user.update({ where: { id: acteur.id }, data: { motDePasseHash: hash, doitChangerMotDePasse: false } });
       // Toutes les sessions sont invalidees
-      this.prisma.refreshToken.updateMany({ where: { userId: acteur.id, revoqueLe: null }, data: { revoqueLe: new Date() } }),
-    ]);
+      await tx.refreshToken.updateMany({ where: { userId: acteur.id, revoqueLe: null }, data: { revoqueLe: new Date() } });
+      // Evenement de securite : le journal n'en gardait jusqu'ici aucune trace
+      await this.audit.journaliser({
+        entite: 'User', entiteId: acteur.id, action: ActionAudit.MODIFICATION, acteur,
+        metadonnees: { motDePasseChange: true, sessionsRevoquees: true }, contexte: ctx,
+      }, tx);
+    });
     return { ok: true };
   }
 

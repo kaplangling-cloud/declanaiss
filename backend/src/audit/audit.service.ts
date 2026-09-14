@@ -25,6 +25,9 @@ const CHAMPS_MASQUES = new Set([
   'mereCniNumeroIndex',
   'qrToken',
   'tokenHash',
+  // Forme en clair des CNI, presente dans les valeurs appliquees d'une rectification
+  'pereCniNumero',
+  'mereCniNumero',
 ]);
 
 /**
@@ -40,7 +43,15 @@ export class AuditService {
   constructor(private readonly prisma: PrismaService) {}
 
   async journaliser(entree: EntreeAudit, tx?: TxClient): Promise<void> {
-    const client = tx ?? this.prisma;
+    // Hors transaction metier, l'ecriture recoit sa propre transaction : le verrou
+    // ci-dessous n'a d'effet que s'il est tenu jusqu'au COMMIT.
+    if (!tx) return this.prisma.$transaction((t) => this.journaliser(entree, t));
+    const client = tx;
+
+    // Serialise l'ecriture du journal : deux transactions concurrentes (centres ou mairies
+    // differents) liraient sinon la meme derniere entree et feraient bifurquer la chaine.
+    // Appele en fin de transaction metier, le verrou n'est tenu que jusqu'au COMMIT.
+    await client.$queryRaw`SELECT 1 FROM pg_advisory_xact_lock(hashtext('audit-chaine'))`;
 
     const precedent = await client.auditLog.findFirst({
       orderBy: { sequence: 'desc' },
@@ -217,6 +228,9 @@ export class AuditService {
 
   private masquer(valeur: unknown): unknown {
     if (valeur === null || valeur === undefined) return undefined;
+    // Une date est un objet sans propriete enumerable : parcourue comme les autres,
+    // elle devenait {} et la valeur journalisee (date de naissance...) etait perdue.
+    if (valeur instanceof Date) return valeur.toISOString();
     if (Array.isArray(valeur)) return valeur.map((v) => this.masquer(v));
     if (typeof valeur === 'object') {
       const sortie: Record<string, unknown> = {};
@@ -228,7 +242,27 @@ export class AuditService {
     return valeur;
   }
 
+  /**
+   * Serialisation canonique : cles triees a tous les niveaux, dates en ISO, valeurs
+   * indefinies omises. Les colonnes JSON du journal sont en jsonb, qui reordonne les
+   * cles a l'enregistrement : sans cette forme canonique, l'empreinte recalculee a la
+   * lecture differait de celle calculee a l'ecriture, et des entrees intactes etaient
+   * signalees comme alterees.
+   */
+  private static canonique(valeur: unknown): unknown {
+    if (valeur === null || typeof valeur !== 'object') return valeur;
+    if (valeur instanceof Date) return valeur.toISOString();
+    if (Array.isArray(valeur)) return valeur.map((v) => AuditService.canonique(v === undefined ? null : v));
+    const objet = valeur as Record<string, unknown>;
+    return Object.fromEntries(
+      Object.keys(objet)
+        .filter((k) => objet[k] !== undefined)
+        .sort()
+        .map((k) => [k, AuditService.canonique(objet[k])]),
+    );
+  }
+
   private static hacher(obj: unknown): string {
-    return crypto.createHash('sha256').update(JSON.stringify(obj)).digest('hex');
+    return crypto.createHash('sha256').update(JSON.stringify(AuditService.canonique(obj))).digest('hex');
   }
 }

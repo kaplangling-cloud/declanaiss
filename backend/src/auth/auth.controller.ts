@@ -40,8 +40,8 @@ export class AuthController {
   @ApiBearerAuth()
   @Post('mot-de-passe')
   @HttpCode(200)
-  changerMotDePasse(@Body() dto: ChangerMotDePasseDto, @CurrentUser() user: UtilisateurCourant) {
-    return this.auth.changerMotDePasse(user, dto.ancienMotDePasse, dto.nouveauMotDePasse);
+  changerMotDePasse(@Body() dto: ChangerMotDePasseDto, @CurrentUser() user: UtilisateurCourant, @RequestContext() ctx: ContexteRequete) {
+    return this.auth.changerMotDePasse(user, dto.ancienMotDePasse, dto.nouveauMotDePasse, ctx);
   }
 
   @ApiBearerAuth()

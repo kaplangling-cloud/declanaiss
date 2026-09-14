@@ -25,9 +25,12 @@ export const tokens = {
 
 export async function rafraichir(): Promise<boolean> {
   if (refreshEnCours) return refreshEnCours;
+  // Le jeton est lu avant de creer la promesse partagee : un retour synchrone dans la
+  // fonction asynchrone laissait refreshEnCours fige sur une promesse deja resolue a
+  // false, et plus aucun renouvellement n'etait tente jusqu'au rechargement de la page.
+  const rt = tokens.refresh();
+  if (!rt) return false;
   refreshEnCours = (async () => {
-    const rt = tokens.refresh();
-    if (!rt) return false;
     try {
       const r = await fetch(`${BASE}/auth/refresh`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ refreshToken: rt }) });
       if (!r.ok) { tokens.clear(); ecouteursDeconnexion.forEach((cb) => cb()); return false; }

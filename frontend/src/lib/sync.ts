@@ -24,12 +24,13 @@ export const sync = {
     const b = await brouillons.lire(clientUuid);
     if (!b) return;
     if (choix === 'SERVEUR') { await brouillons.supprimer(clientUuid); }
-    else { await brouillons.ecrire({ ...b, statutLocal: 'A_SYNCHRONISER', versionBase: b.serveur?.version ?? b.versionBase, serveur: undefined, message: undefined }); }
+    // L'ecrasement est demande pour ce seul element : il ne doit pas s'etendre au reste de la file
+    else { await brouillons.ecrire({ ...b, statutLocal: 'A_SYNCHRONISER', versionBase: b.serveur?.version ?? b.versionBase, forcer: true, serveur: undefined, message: undefined }); }
     notifier();
-    if (choix === 'LOCAL') void sync.executer(true);
+    if (choix === 'LOCAL') void sync.executer();
   },
 
-  async executer(forcer = false) {
+  async executer() {
     if (enCours || estHorsLigne()) return;
     const file = await brouillons.aSynchroniser();
     if (!file.length) return;
@@ -37,18 +38,24 @@ export const sync = {
     try {
       const r = await api<{ resultats: ResultatSync[] }>('/declarations/sync', {
         method: 'POST',
-        body: { elements: file.map((b) => ({ clientUuid: b.clientUuid, action: b.action, versionBase: b.versionBase, saisieLe: b.saisieLe, forcer, payload: b.payload })) },
+        body: { elements: file.map((b) => ({ clientUuid: b.clientUuid, action: b.action, versionBase: b.versionBase, saisieLe: b.saisieLe, forcer: !!b.forcer, payload: b.payload })) },
       });
       for (const res of r.resultats) {
         const b = await brouillons.lire(res.clientUuid);
         if (!b) continue;
         switch (res.resultat) {
-          case 'CREEE': case 'MISE_A_JOUR': case 'INCHANGEE':
+          case 'CREEE': case 'MISE_A_JOUR':
             // Accepte par le serveur : la copie locale n'a plus de raison d'exister
             await brouillons.supprimer(res.clientUuid);
             break;
+          case 'INCHANGEE':
+            // Le serveur n'a pas applique la saisie locale (dossier verrouille ou valide entre-temps).
+            // La supprimer ici ferait perdre ce que l'agent a saisi sans qu'il le sache : elle reste
+            // visible jusqu'a ce qu'il choisisse explicitement de conserver la version serveur.
+            await brouillons.ecrire({ ...b, statutLocal: 'CONFLIT', serveurId: res.id, statutServeur: res.statut, message: res.message, forcer: undefined });
+            break;
           case 'CONFLIT':
-            await brouillons.ecrire({ ...b, statutLocal: 'CONFLIT', serveurId: res.id, serveur: res.serveur, statutServeur: res.statut, message: res.message });
+            await brouillons.ecrire({ ...b, statutLocal: 'CONFLIT', serveurId: res.id, serveur: res.serveur, statutServeur: res.statut, message: res.message, forcer: undefined });
             break;
           default:
             await brouillons.ecrire({ ...b, statutLocal: 'ERREUR', message: res.message, erreurs: res.erreurs });

@@ -1,4 +1,4 @@
-import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { ActionAudit, Prisma, Role } from '@prisma/client';
 import * as argon2 from 'argon2';
 import { PrismaService } from '../prisma/prisma.service';
@@ -14,18 +14,24 @@ const SELECTION_PUBLIQUE = {
   mairie: { select: { id: true, nom: true, code: true } },
 } satisfies Prisma.UserSelect;
 
+const ROLES_CENTRE: Role[] = [Role.PERSONNEL_SANTE, Role.CHEF_CENTRE];
+const ROLES_MAIRIE: Role[] = [Role.OFFICIER_ETAT_CIVIL, Role.SECRETAIRE_MAIRIE];
+
+type Rattachement = { role: Role; centreId?: string | null; mairieId?: string | null };
+
 /**
  * Regles de gestion des comptes :
  *  - ADMIN_NATIONAL cree tout type de compte.
  *  - CHEF_CENTRE ne cree/modifie que des PERSONNEL_SANTE de son centre.
  *  - OFFICIER_ETAT_CIVIL ne cree/modifie que des SECRETAIRE_MAIRIE de sa mairie.
+ *  - Seul ADMIN_NATIONAL change un role, un rattachement ou une adresse de connexion.
  *  - Jamais de suppression physique : desactivation uniquement.
  */
 @Injectable()
 export class UsersService {
   constructor(private readonly prisma: PrismaService, private readonly audit: AuditService) {}
 
-  private verifierPerimetre(acteur: UtilisateurCourant, cible: { role: Role; centreId?: string | null; mairieId?: string | null }) {
+  private verifierPerimetre(acteur: UtilisateurCourant, cible: Rattachement) {
     if (acteur.role === Role.ADMIN_NATIONAL) return;
     if (acteur.role === Role.CHEF_CENTRE) {
       if (cible.role !== Role.PERSONNEL_SANTE || cible.centreId !== acteur.centreId) {
@@ -42,12 +48,17 @@ export class UsersService {
     throw new ForbiddenException();
   }
 
-  private validerRattachement(dto: { role: Role; centreId?: string | null; mairieId?: string | null }) {
-    const rolesCentre: Role[] = [Role.PERSONNEL_SANTE, Role.CHEF_CENTRE];
-    const rolesMairie: Role[] = [Role.OFFICIER_ETAT_CIVIL, Role.SECRETAIRE_MAIRIE];
-    if (rolesCentre.includes(dto.role) && !dto.centreId) throw new BadRequestException('centreId obligatoire pour ce role');
-    if (rolesMairie.includes(dto.role) && !dto.mairieId) throw new BadRequestException('mairieId obligatoire pour ce role');
-    if (dto.role === Role.ADMIN_NATIONAL && (dto.centreId || dto.mairieId)) {
+  /** Un compte porte exactement le rattachement que son role exige, et aucun autre. */
+  private validerRattachement(r: Rattachement) {
+    if (ROLES_CENTRE.includes(r.role)) {
+      if (!r.centreId) throw new BadRequestException('centreId obligatoire pour ce role');
+      if (r.mairieId) throw new BadRequestException("Un compte de centre de sante n'est pas rattache a une mairie");
+    }
+    if (ROLES_MAIRIE.includes(r.role)) {
+      if (!r.mairieId) throw new BadRequestException('mairieId obligatoire pour ce role');
+      if (r.centreId) throw new BadRequestException("Un compte de mairie n'est pas rattache a un centre de sante");
+    }
+    if (r.role === Role.ADMIN_NATIONAL && (r.centreId || r.mairieId)) {
       throw new BadRequestException("Un administrateur national n'est rattache ni a un centre ni a une mairie");
     }
   }
@@ -94,12 +105,42 @@ export class UsersService {
     const existant = await this.prisma.user.findUnique({ where: { id } });
     if (!existant) throw new NotFoundException();
     this.verifierPerimetre(acteur, existant);
-    if (dto.role && dto.role !== existant.role && acteur.role !== Role.ADMIN_NATIONAL) {
-      throw new ForbiddenException("Seul l'administrateur national peut changer un role");
+
+    // Role, rattachement et adresse de connexion etaient acceptes par la validation
+    // puis ignores en silence : ils sont desormais appliques (administrateur) ou refuses.
+    const email = dto.email?.toLowerCase().trim();
+    const changeRole = dto.role !== undefined && dto.role !== existant.role;
+    const changeCentre = dto.centreId !== undefined && dto.centreId !== existant.centreId;
+    const changeMairie = dto.mairieId !== undefined && dto.mairieId !== existant.mairieId;
+    const changeEmail = email !== undefined && email !== existant.email;
+    const changeStructure = changeRole || changeCentre || changeMairie;
+
+    if (acteur.role !== Role.ADMIN_NATIONAL && (changeStructure || changeEmail)) {
+      throw new ForbiddenException("Seul l'administrateur national modifie le role, le rattachement ou l'adresse de connexion");
+    }
+    if (dto.personnelSanteId !== undefined) {
+      throw new BadRequestException('La liaison a une fiche de personnel se fait a la creation du compte');
+    }
+    if (dto.actif === false && id === acteur.id) {
+      throw new ForbiddenException('Impossible de desactiver son propre compte');
     }
 
-    const data: Prisma.UserUpdateInput = {
-      nom: dto.nom, prenoms: dto.prenoms, telephone: dto.telephone, role: dto.role,
+    const cible: Rattachement = {
+      role: dto.role ?? existant.role,
+      centreId: changeCentre ? dto.centreId : existant.centreId,
+      mairieId: changeMairie ? dto.mairieId : existant.mairieId,
+    };
+    if (changeStructure) this.validerRattachement(cible);
+    if (changeEmail && (await this.prisma.user.findUnique({ where: { email: email! }, select: { id: true } }))) {
+      throw new ConflictException('Adresse de connexion deja utilisee');
+    }
+
+    const data: Prisma.UserUncheckedUpdateInput = {
+      nom: dto.nom, prenoms: dto.prenoms, telephone: dto.telephone,
+      role: changeRole ? cible.role : undefined,
+      centreId: changeCentre ? cible.centreId : undefined,
+      mairieId: changeMairie ? cible.mairieId : undefined,
+      email: changeEmail ? email : undefined,
       actif: dto.actif,
       desactiveLe: dto.actif === false ? new Date() : dto.actif === true ? null : undefined,
     };
@@ -110,13 +151,28 @@ export class UsersService {
 
     return this.prisma.$transaction(async (tx) => {
       const maj = await tx.user.update({ where: { id }, data, select: SELECTION_PUBLIQUE });
-      if (dto.actif === false) {
+
+      // Une reinitialisation de mot de passe doit fermer les sessions existantes :
+      // c'est precisement le geste attendu face a un compte compromis.
+      if (dto.actif === false || dto.motDePasse) {
         await tx.refreshToken.updateMany({ where: { userId: id, revoqueLe: null }, data: { revoqueLe: new Date() } });
       }
+      // Un compte qui quitte son centre ne reste pas lie a une fiche de personnel de ce centre
+      if (changeCentre) {
+        await tx.personnelSante.updateMany({
+          where: { userId: id, ...(cible.centreId ? { centreId: { not: cible.centreId } } : {}) },
+          data: { userId: null },
+        });
+      }
+
       await this.audit.journaliser({
         entite: 'User', entiteId: id,
         action: dto.actif === false ? ActionAudit.DESACTIVATION_COMPTE : ActionAudit.MODIFICATION,
-        acteur, valeursAvant: { actif: existant.actif, role: existant.role }, valeursApres: { actif: maj.actif, role: maj.role }, contexte: ctx,
+        acteur,
+        valeursAvant: { actif: existant.actif, role: existant.role, centreId: existant.centreId, mairieId: existant.mairieId, email: existant.email },
+        valeursApres: { actif: maj.actif, role: maj.role, centreId: maj.centreId, mairieId: maj.mairieId, email: maj.email },
+        metadonnees: dto.motDePasse ? { motDePasseReinitialise: true, sessionsRevoquees: true } : undefined,
+        contexte: ctx,
       }, tx);
       return maj;
     });

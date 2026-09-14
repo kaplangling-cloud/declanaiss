@@ -22,20 +22,38 @@ type Ligne = {
   createdAt: Date;
 };
 
-/** Journal en memoire reproduisant le comportement de la table audit_logs. */
+/** Reconstruit un objet en inversant l'ordre de ses cles, a tous les niveaux. */
+const inverserCles = (v: unknown): unknown => {
+  if (v === null || typeof v !== 'object') return v;
+  if (Array.isArray(v)) return v.map(inverserCles);
+  return Object.fromEntries(Object.entries(v as Record<string, unknown>).reverse().map(([k, x]) => [k, inverserCles(x)]));
+};
+
+/**
+ * Journal en memoire reproduisant la table audit_logs. Comme une colonne jsonb, il ne
+ * conserve pas l'ordre des cles des objets JSON : il les restitue dans l'ordre inverse
+ * et convertit les dates en chaines, ce qui est le pire cas pour le recalcul d'empreinte.
+ */
 class JournalFactice {
   lignes: Ligne[] = [];
+  verrous = 0;
+  $queryRaw = async () => {
+    this.verrous++;
+    return [];
+  };
+  $transaction = async (fn: (tx: unknown) => unknown) => fn(this);
   auditLog = {
     findFirst: async () => (this.lignes.length ? this.lignes[this.lignes.length - 1] : null),
     findMany: async () => [...this.lignes],
     create: async ({ data }: { data: Record<string, unknown> }) => {
+      const jsonb = (v: unknown) => (v === undefined || v === null ? null : inverserCles(JSON.parse(JSON.stringify(v))));
       this.lignes.push({
         sequence: BigInt(this.lignes.length + 1),
-        valeursAvant: null,
-        valeursApres: null,
-        metadonnees: null,
         createdAt: new Date(),
         ...data,
+        valeursAvant: jsonb(data.valeursAvant),
+        valeursApres: jsonb(data.valeursApres),
+        metadonnees: jsonb(data.metadonnees),
       } as Ligne);
     },
   };
@@ -116,6 +134,38 @@ describe('AuditService - chaine immuable', () => {
     // Les entrees suivantes restent controlees : le parcours ne s'interrompt pas
     expect(bilan.anomalies.filter((a) => a.sequence === '2')).toHaveLength(2);
     expect(bilan.anomalies.some((a) => a.sequence === '3')).toBe(false);
+  });
+
+  it('reste verifiable lorsque la base reordonne les cles JSON (jsonb)', async () => {
+    const { journal, service } = nouveau();
+    await service.journaliser({
+      entite: 'Declaration', entiteId: 'd-1', action: ActionAudit.MODIFICATION, acteur, contexte: ctx,
+      valeursAvant: { statut: 'BROUILLON', version: 1, enfant: { nom: 'Ndongo', prenoms: 'Chloe' } },
+      valeursApres: { statut: 'SOUMISE', version: 2, enfant: { nom: 'Ndongo', prenoms: 'Chloe Marie' } },
+      metadonnees: { zeta: 1, alpha: 2, milieu: [{ b: 1, a: 2 }] },
+    });
+    // L'ordre restitue differe bien de l'ordre ecrit
+    expect(Object.keys(journal.lignes[0].valeursApres as object)).toEqual(['enfant', 'version', 'statut']);
+    expect(await service.verifierChaine()).toMatchObject({ integre: true, anomalies: [] });
+  });
+
+  it('conserve les dates dans les valeurs journalisees', async () => {
+    const { journal, service } = nouveau();
+    await service.journaliser({
+      entite: 'Declaration', entiteId: 'd-1', action: ActionAudit.RECTIFICATION, acteur, contexte: ctx,
+      valeursAvant: { enfantDateNaissance: new Date('2026-09-01T00:00:00.000Z') },
+      valeursApres: { enfantDateNaissance: new Date('2026-08-31T00:00:00.000Z') },
+    });
+    expect(journal.lignes[0].valeursAvant).toEqual({ enfantDateNaissance: '2026-09-01T00:00:00.000Z' });
+    expect(journal.lignes[0].valeursApres).toEqual({ enfantDateNaissance: '2026-08-31T00:00:00.000Z' });
+    expect((await service.verifierChaine()).integre).toBe(true);
+  });
+
+  it("prend un verrou de transaction pour chaque ecriture, meme hors transaction metier", async () => {
+    const { journal, service } = nouveau();
+    await service.journaliser({ entite: 'User', entiteId: 'u-1', action: ActionAudit.CONNEXION, acteur, contexte: ctx });
+    await service.journaliser({ entite: 'User', entiteId: 'u-1', action: ActionAudit.DECONNEXION, acteur, contexte: ctx }, journal as never);
+    expect(journal.verrous).toBe(2);
   });
 
   it('masque les champs sensibles avant de les journaliser', async () => {

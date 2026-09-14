@@ -26,7 +26,7 @@ npm run start:dev                  # API en watch sur :3000
 npm run build                      # nest build + compilation du seed (tsconfig.seed.json)
 npm run lint
 npx tsc --noEmit -p tsconfig.json  # vérification de types seule
-npm test                           # jest (aucun test écrit à ce jour)
+npm test                           # jest : tests unitaires *.spec.ts (hors image de production, cf. tsconfig.build.json)
 npx jest chemin/du.spec.ts         # un seul fichier de test
 npm run prisma:migrate             # créer + appliquer une migration (dev)
 npm run prisma:deploy              # appliquer les migrations (prod)
@@ -55,20 +55,22 @@ Ces règles traversent plusieurs modules ; les enfreindre casse la valeur légal
 - **Aucune suppression physique.** Partout des suppressions logiques (`supprimeLe`, `desactiveLe`, `actif`). Une circonscription absente d'un import est signalée, jamais retirée : des déclarations y sont rattachées.
 - **Une naissance = un enregistrement.** Les opérations sensibles (soumission, validation, édition d'acte) se déroulent dans une transaction Prisma unique couvrant l'attribution du numéro, l'écriture métier et l'audit.
 - **Cloisonnement par structure.** Chaque service expose un `perimetre(acteur)` qui produit un `WhereInput` selon le rôle : un centre ne voit que ses déclarations, une mairie que celles qui lui sont adressées, l'administrateur national tout. Toute nouvelle requête sur `Declaration` ou `Acte` doit passer par là — ne jamais interroger ces tables sans filtre de périmètre.
-- **Audit immuable chaîné.** `AuditService.journaliser()` calcule le SHA-256 du contenu concaténé au hash de l'entrée précédente ; `verifierChaine()` relit la chaîne et détecte toute altération ou suppression. Journaliser dans la même transaction que l'écriture métier, en passant le client transactionnel.
+- **Audit immuable chaîné.** `AuditService.journaliser()` calcule le SHA-256 du contenu concaténé au hash de l'entrée précédente ; `verifierChaine()` relit la chaîne et détecte toute altération ou suppression. Journaliser dans la même transaction que l'écriture métier, en passant le client transactionnel. Deux détails sont indispensables : l'écriture prend un verrou consultatif global (sans lui, deux transactions concurrentes font bifurquer la chaîne), et l'empreinte porte sur un JSON canonique à clés triées, car `jsonb` réordonne les clés à l'enregistrement.
 - **Fenêtre de modification de 7 jours.** Après soumission, `dateLimiteModification` est fixée ; une tâche planifiée (`jobs/`) verrouille ensuite les dossiers. Au-delà, la seule voie est une `Rectification` tracée, initiée par la mairie.
 
 ### Chiffrement au repos
 
 `CryptoService` (AES-256-GCM, format `v1:iv:tag:ciphertext`) chiffre les numéros de CNI et les pièces jointes. Un **index aveugle** HMAC-SHA256 (`pereCniNumeroIndex`) permet la recherche par égalité sans stocker le clair. Le préfixe de version prépare une rotation de clé sans migration destructive.
 
+Les valeurs d'une rectification, conservées en JSON, portent elles aussi les CNI sous forme chiffrée ; l'audit masque leur forme en clair.
+
 Perdre `DATA_ENCRYPTION_KEY` rend les CNI et les pièces jointes définitivement illisibles.
 
 ### Numérotation
 
-`NumerotationService` produit `{codeRégion}-{codeCentre}-{année}-{séquence sur 6}-{clé}`. La séquence vient de la table `sequences_declaration` incrémentée dans la transaction, ce qui verrouille la ligne : deux soumissions simultanées ne peuvent pas obtenir le même numéro. La clé de contrôle sur deux caractères (alphabet sans I ni O) détecte les fautes de frappe et de transposition lors d'une saisie manuelle sur la page de vérification publique.
+`NumerotationService` produit `{codeRégion}-{codeCentre}-{année}-{séquence sur 6}-{clé}`. La séquence vient de la table `sequences_declaration`, incrémentée dans la transaction sous un verrou consultatif PostgreSQL propre au centre et à l'année (`pg_advisory_xact_lock`) : les soumissions simultanées sont sérialisées, y compris la première de l'année, qui créerait sinon deux fois la même ligne. La clé de contrôle sur deux caractères (alphabet sans I ni O) détecte les fautes de frappe et de transposition lors d'une saisie manuelle sur la page de vérification publique.
 
-Le numéro d'acte de mairie suit un autre format : `{codeMairie}/{année}/{séquence sur 5}`.
+Le numéro d'acte de mairie suit un autre format, `{codeMairie}/{année}/{séquence sur 5}`, sous le même type de verrou, par mairie et par année.
 
 ### Mode hors-ligne et synchronisation
 

@@ -6,10 +6,10 @@ import { PrismaService, TxClient } from '../../prisma/prisma.service';
  *   {codeRegion}-{codeCentre}-{annee}-{sequence sur 6}-{cle de controle}
  * ex : CE-EBOL01-2026-000123-K7
  *
- * La sequence est attribuee dans la transaction de soumission, par un
- * verrou de ligne sur la table `sequences_declaration` (une seule sequence
- * par centre et par annee) : deux soumissions simultanees ne peuvent pas
- * obtenir le meme numero.
+ * La sequence est attribuee dans la transaction de soumission, sous un verrou
+ * consultatif PostgreSQL propre au centre et a l'annee : les soumissions
+ * simultanees sont serialisees, y compris la premiere de l'annee, ou deux
+ * transactions tenteraient sinon de creer la meme ligne de sequence.
  */
 @Injectable()
 export class NumerotationService {
@@ -21,8 +21,9 @@ export class NumerotationService {
     tx: TxClient,
     params: { centreId: string; codeRegion: string; codeCentre: string; annee: number },
   ): Promise<{ numeroDeclaration: string; cleControle: string; sequence: number }> {
-    // upsert + increment atomique : le SELECT ... FOR UPDATE est implicite
-    // dans l'UPDATE, la ligne est verrouillee jusqu'au COMMIT.
+    // Sans ce verrou, deux premieres soumissions de l'annee lisent toutes deux
+    // l'absence de ligne et tentent de la creer : l'une echoue sur l'unicite.
+    await this.verrouiller(tx, `sequence-declaration:${params.centreId}:${params.annee}`);
     const existante = await tx.sequenceDeclaration.findUnique({
       where: { centreId_annee: { centreId: params.centreId, annee: params.annee } },
     });
@@ -49,6 +50,11 @@ export class NumerotationService {
 
     const cleControle = NumerotationService.calculerCle(base);
     return { numeroDeclaration: `${base}-${cleControle}`, cleControle, sequence };
+  }
+
+  /** Verrou consultatif PostgreSQL, libere automatiquement a la fin de la transaction. */
+  private async verrouiller(tx: TxClient, cle: string): Promise<void> {
+    await tx.$queryRaw`SELECT 1 FROM pg_advisory_xact_lock(hashtext(${cle}))`;
   }
 
   /**
@@ -84,6 +90,9 @@ export class NumerotationService {
     tx: TxClient,
     params: { mairieId: string; codeMairie: string; annee: number },
   ): Promise<string> {
+    // Lecture du dernier numero puis increment : sans verrou, deux editions
+    // simultanees dans la meme mairie calculaient le meme numero d'acte.
+    await this.verrouiller(tx, `sequence-acte:${params.mairieId}:${params.annee}`);
     const dernier = await tx.acte.findFirst({
       where: { mairieId: params.mairieId, anneeRegistre: params.annee },
       orderBy: { numeroActe: 'desc' },
