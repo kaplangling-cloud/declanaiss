@@ -80,6 +80,16 @@ export default function DeclarationForm() {
     })();
   }, [uuidBrouillon, idServeur, reset]);
 
+  // Suit la version et l'identifiant attribues par le serveur a chaque synchronisation :
+  // l'enregistrement suivant part de la bonne version, et les pieces jointes deviennent
+  // accessibles sans recharger la page.
+  useEffect(() => sync.abonner(() => {
+    const e = sync.etatServeur(clientUuid);
+    if (!e) return;
+    setVersionBase((v) => Math.max(v, e.version));
+    if (e.id) setServeurId(e.id);
+  }), [clientUuid]);
+
   const termeGrossesse = watch('termeGrossesse');
   const declarantEstPersonnel = watch('declarantEstPersonnel');
 

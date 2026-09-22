@@ -1,5 +1,6 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { ActionAudit, Prisma, Role, StatutDeclaration } from '@prisma/client';
+import { format } from 'date-fns';
 import { PrismaService } from '../prisma/prisma.service';
 import { CryptoService } from '../common/services/crypto.service';
 import { NumerotationService } from '../common/services/numerotation.service';
@@ -72,10 +73,23 @@ export class ActesService {
       ? `${d.accoucheur?.prenoms ?? ''} ${d.accoucheur?.nom ?? ''} (${d.accoucheur?.fonction ?? 'personnel de sante'}, ${d.centre.nom})`.trim()
       : `${d.declarantPrenoms ?? ''} ${d.declarantNom ?? ''} (${d.declarantQualite ?? ''})`.trim();
 
+    // Le numero est pris dans le registre de l'annee en cours : une date de dressage
+    // d'une autre annee, future ou anterieure a la naissance produirait un acte
+    // dont la date contredit le numero de registre.
+    const aujourdHui = format(new Date(), 'yyyy-MM-dd');
+    const jourDressage = dto.dateDressage ? dto.dateDressage.slice(0, 10) : aujourdHui;
+    if (jourDressage > aujourdHui) throw new BadRequestException('La date de dressage ne peut pas etre dans le futur');
+    if (jourDressage.slice(0, 4) !== aujourdHui.slice(0, 4)) {
+      throw new BadRequestException(`La date de dressage doit appartenir a l'annee du registre (${aujourdHui.slice(0, 4)})`);
+    }
+    if (d.enfantDateNaissance && jourDressage < d.enfantDateNaissance.toISOString().slice(0, 10)) {
+      throw new BadRequestException('La date de dressage ne peut pas preceder la naissance');
+    }
+
     return this.prisma.$transaction(async (tx) => {
-      const annee = new Date().getFullYear();
+      const annee = Number(aujourdHui.slice(0, 4));
       const numeroActe = await this.numerotation.attribuerNumeroActe(tx, { mairieId: d.mairieId, codeMairie: d.mairie.code, annee });
-      const dateDressage = dto.dateDressage ? new Date(dto.dateDressage) : new Date();
+      const dateDressage = new Date(jourDressage);
 
       const acte = await tx.acte.create({
         data: {

@@ -2,7 +2,7 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { ModeAccouchement, Sexe, StatutDeclaration, TermeGrossesse, TypePieceJointe } from '@prisma/client';
 import { Type } from 'class-transformer';
 import {
-  IsArray, IsBoolean, IsDateString, IsEnum, IsInt, IsISO8601, IsObject, IsOptional, IsString, IsUUID,
+  IsArray, IsBoolean, IsDateString, IsEnum, IsInt, IsISO8601, IsNotEmpty, IsObject, IsOptional, IsString, IsUUID,
   Matches, Max, MaxLength, Min, ValidateNested,
 } from 'class-validator';
 
@@ -71,7 +71,7 @@ export class ModifierDeclarationDto extends DeclarationPayloadDto {
 }
 
 export class RejeterDto {
-  @ApiProperty() @IsString() @MaxLength(1000) motif!: string;
+  @ApiProperty() @IsString() @IsNotEmpty() @MaxLength(1000) motif!: string;
 }
 
 export class ListerDeclarationsDto {
@@ -111,7 +111,7 @@ export class AjouterPieceDto {
 }
 
 export class DemanderRectificationDto {
-  @ApiProperty() @IsString() @MaxLength(2000) motif!: string;
+  @ApiProperty() @IsString() @IsNotEmpty() @MaxLength(2000) motif!: string;
   @ApiProperty({ type: [String] }) @IsArray() @IsString({ each: true }) champsCibles!: string[];
   @ApiProperty({ type: DeclarationPayloadDto }) @ValidateNested() @Type(() => DeclarationPayloadDto) valeursApres!: DeclarationPayloadDto;
   @ApiPropertyOptional() @IsOptional() @IsString() @MaxLength(300) referenceLegale?: string;

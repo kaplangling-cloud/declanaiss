@@ -6,6 +6,11 @@ import { PrismaService } from '../prisma/prisma.service';
 import { NumerotationService } from '../common/services/numerotation.service';
 import { ContexteRequete, Public, RequestContext } from '../common/decorators';
 
+/** Statuts d'une declaration reconnue comme authentique (ni brouillon, ni rejetee). */
+const STATUTS_VERIFIABLES: StatutDeclaration[] = [
+  StatutDeclaration.SOUMISE, StatutDeclaration.VALIDEE, StatutDeclaration.VERROUILLEE,
+];
+
 export type ResultatVerification = {
   statut: 'AUTHENTIQUE' | 'INTROUVABLE';
   /** Type de document reconnu (aucune donnee personnelle) */
@@ -48,16 +53,18 @@ export class VerificationService {
       // 2. Numero de declaration (avec cle de controle)
       if (resultat.statut === 'INTROUVABLE' && NumerotationService.verifierFormat(refMaj)) {
         const d = await this.prisma.declaration.findFirst({
-          where: { numeroDeclaration: refMaj, statut: { in: [StatutDeclaration.SOUMISE, StatutDeclaration.VALIDEE, StatutDeclaration.VERROUILLEE] } },
-          select: { acte: { select: { anneeRegistre: true } }, dateSoumission: true },
+          where: { numeroDeclaration: refMaj, statut: { in: STATUTS_VERIFIABLES } },
+          select: { acte: { select: { anneeRegistre: true, annuleLe: true } }, dateSoumission: true },
         });
-        if (d) resultat = { ...resultat, statut: 'AUTHENTIQUE', type: d.acte ? 'ACTE' : 'DECLARATION', annee: d.acte?.anneeRegistre ?? d.dateSoumission?.getFullYear() };
+        // Un acte annule ne doit pas etre reconnu par un detour via le numero de declaration
+        if (d && !d.acte?.annuleLe) resultat = { ...resultat, statut: 'AUTHENTIQUE', type: d.acte ? 'ACTE' : 'DECLARATION', annee: d.acte?.anneeRegistre ?? d.dateSoumission?.getFullYear() };
       }
 
-      // 3. Token QR (sensible a la casse)
+      // 3. Token QR (sensible a la casse). Memes statuts qu'au point 2 : une declaration
+      // rejetee etait jusqu'ici reconnue par son jeton mais pas par son numero.
       if (resultat.statut === 'INTROUVABLE') {
         const d = await this.prisma.declaration.findFirst({
-          where: { qrToken: ref, statut: { not: StatutDeclaration.BROUILLON } },
+          where: { qrToken: ref, statut: { in: STATUTS_VERIFIABLES } },
           select: { acte: { select: { anneeRegistre: true, annuleLe: true } }, dateSoumission: true },
         });
         if (d && !d.acte?.annuleLe) resultat = { ...resultat, statut: 'AUTHENTIQUE', type: d.acte ? 'ACTE' : 'DECLARATION', annee: d.acte?.anneeRegistre ?? d.dateSoumission?.getFullYear() };
