@@ -93,13 +93,14 @@ export class NumerotationService {
     // Lecture du dernier numero puis increment : sans verrou, deux editions
     // simultanees dans la meme mairie calculaient le meme numero d'acte.
     await this.verrouiller(tx, `sequence-acte:${params.mairieId}:${params.annee}`);
-    const dernier = await tx.acte.findFirst({
-      where: { mairieId: params.mairieId, anneeRegistre: params.annee },
-      orderBy: { numeroActe: 'desc' },
-      select: { numeroActe: true },
-    });
-    const dernierSeq = dernier ? Number(dernier.numeroActe.split('/').pop()) : 0;
-    const suivant = String(dernierSeq + 1).padStart(5, '0');
+    // Maximum numerique de la sequence, et non tri du numero complet : si le code de la
+    // mairie change en cours d'annee, "EBO1/..." resterait sinon devant "09050309/..." et
+    // la meme sequence serait redonnee a chaque edition.
+    const [{ dernier }] = await tx.$queryRaw<Array<{ dernier: number | null }>>`
+      SELECT MAX(CAST(split_part("numeroActe", '/', 3) AS INTEGER)) AS dernier
+      FROM actes
+      WHERE "mairieId" = ${params.mairieId} AND "anneeRegistre" = ${params.annee}`;
+    const suivant = String((dernier ?? 0) + 1).padStart(5, '0');
     return `${params.codeMairie.toUpperCase()}/${params.annee}/${suivant}`;
   }
 }

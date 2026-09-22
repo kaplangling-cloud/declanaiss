@@ -13,6 +13,7 @@
  *     signalee, jamais retiree (des declarations peuvent y etre rattachees).
  */
 import { PrismaClient } from '@prisma/client';
+import { codeCentreEtatCivil } from '../src/common/referentiel/code-etat-civil';
 import { existsSync, readFileSync } from 'fs';
 import * as path from 'path';
 
@@ -141,6 +142,50 @@ export async function importerDecoupage(prisma: PrismaClient) {
     console.warn(`${orphelins.length} arrondissement(s) hors fichier, conserves : ${orphelins.map((o) => o.nom).join(', ')}`);
   }
   console.warn(`Avertissement : ${data.avertissement}`);
+
+  await alignerCodesMairies(prisma);
+}
+
+/**
+ * Aligne le code des mairies sur la regle de RDC.xlsx (region + departement +
+ * arrondissement, cf. codeCentreEtatCivil). Une mairie qui a deja dresse des
+ * actes garde son code, qui figure dans leurs numeros : elle est seulement signalee.
+ */
+async function alignerCodesMairies(prisma: PrismaClient) {
+  const mairies = await prisma.mairie.findMany({
+    include: {
+      arrondissement: { include: { departement: { include: { region: true } } } },
+      _count: { select: { actes: true } },
+    },
+  });
+  let alignees = 0;
+  const ecartees: string[] = [];
+
+  for (const m of mairies) {
+    const a = m.arrondissement;
+    let attendu: string;
+    try {
+      attendu = codeCentreEtatCivil(a.departement.region.code, a.departement.code, a.code);
+    } catch (e) {
+      ecartees.push(`${m.code} (${m.nom}) : ${(e as Error).message}`);
+      continue;
+    }
+    if (m.code === attendu) continue;
+    if (m._count.actes > 0) {
+      ecartees.push(`${m.code} (${m.nom}) : ${m._count.actes} acte(s) deja dresse(s), code attendu ${attendu} non applique`);
+      continue;
+    }
+    const occupant = await prisma.mairie.findUnique({ where: { code: attendu }, select: { nom: true } });
+    if (occupant) {
+      ecartees.push(`${m.code} (${m.nom}) : code ${attendu} deja porte par ${occupant.nom}`);
+      continue;
+    }
+    await prisma.mairie.update({ where: { id: m.id }, data: { code: attendu } });
+    alignees++;
+  }
+
+  console.log(`Mairies        : ${alignees} code(s) aligne(s) sur RDC.xlsx`);
+  if (ecartees.length) console.warn(`${ecartees.length} mairie(s) conservee(s) en l'etat :\n  - ${ecartees.join('\n  - ')}`);
 }
 
 // Execution directe : npx ts-node prisma/import-decoupage.ts

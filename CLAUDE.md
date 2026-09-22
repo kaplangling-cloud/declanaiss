@@ -93,6 +93,8 @@ Le rendu est en coordonnées absolues : le pied de page (signatures, QR, code-ba
 
 10 régions, 58 départements, 360 arrondissements, codes officiels `R09-D50-A309`, dénominations FR (`nom`) et EN (`nomEn`). Source : `RDC.xlsx`, converti une fois en `backend/prisma/data/decoupage-administratif.json` pour éviter d'embarquer un lecteur Excel dans le backend. `import-decoupage.ts` est idempotent et rapproche les lignes existantes par nom normalisé (sans accent ni casse) avant de leur appliquer le code officiel.
 
+Le code d'une mairie (centre d'état civil) n'est jamais saisi : il dérive de son arrondissement selon la colonne « Code unique » de `RDC.xlsx`, région sur 2 chiffres + département sur 3 + arrondissement sur 3 (`R09-D50-A309` → `09050309`), via `codeCentreEtatCivil()`. Un seul centre par arrondissement. Ce code entre dans le numéro des actes : une mairie qui en a dressé ne peut plus en changer, et l'import ne réaligne que les mairies sans acte.
+
 ### Extensibilité du modèle
 
 `Declaration` porte `versionModele` et `donneesComplementaires` (JSON) : un champ peut être ajouté progressivement sans migration destructive. Les migrations doivent rester additives.

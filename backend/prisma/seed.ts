@@ -8,6 +8,7 @@
 import { PrismaClient, Role } from '@prisma/client';
 import * as argon2 from 'argon2';
 import { importerDecoupage } from './import-decoupage';
+import { codeCentreEtatCivil, nomCentreEtatCivil } from '../src/common/referentiel/code-etat-civil';
 
 const prisma = new PrismaClient();
 
@@ -29,14 +30,15 @@ async function main() {
     where: { departementId: mvila.id, code: 'A309' },
   });
 
-  const mairie = await prisma.mairie.upsert({
-    where: { code: 'EBO1' },
-    update: {},
-    create: {
-      code: 'EBO1', nom: "Centre d'etat civil principal de la Mairie d'Ebolowa 1er",
-      adresse: 'Ebolowa, Sud', regionId: sud.id, departementId: mvila.id, arrondissementId: ebolowa1.id,
-    },
-  });
+  // Un centre d'etat civil par arrondissement, code derive du referentiel (RDC.xlsx)
+  const mairie =
+    (await prisma.mairie.findFirst({ where: { arrondissementId: ebolowa1.id } })) ??
+    (await prisma.mairie.create({
+      data: {
+        code: codeCentreEtatCivil(sud.code, mvila.code, ebolowa1.code), nom: nomCentreEtatCivil(ebolowa1.nom),
+        adresse: 'Ebolowa, Sud', regionId: sud.id, departementId: mvila.id, arrondissementId: ebolowa1.id,
+      },
+    }));
 
   const centre = await prisma.centre.upsert({
     where: { code: 'HREBO' },
