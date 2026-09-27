@@ -1,0 +1,19 @@
+# =====================================================================
+#  Pre-production locale — surcharge du compose de base :
+#    docker compose -f docker-compose.yml -f docker-compose.preprod.yml up -d --build
+#  API et base comme en production (NODE_ENV=production : secrets exiges,
+#  Swagger desactive ; PostgreSQL non expose sur l'hote), mais Nginx reste en
+#  HTTP sur ${HTTP_PORT:-8080} : le HTTPS de docker-compose.prod.yml exige un
+#  nom de domaine et un certificat Let's Encrypt.
+#  Retour au mode developpement : docker compose up -d
+# =====================================================================
+services:
+  postgres:
+    ports: !reset []
+
+  app:
+    environment:
+      NODE_ENV: production
+    logging:
+      driver: json-file
+      options: { max-size: "20m", max-file: "10" }

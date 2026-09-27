@@ -17,7 +17,10 @@ docker compose up -d               # démarrer (app + nginx + postgres) → http
 docker compose up -d --build       # après modification du code
 docker compose logs -f app         # logs de l'API
 docker compose down                # arrêter (les volumes pgdata et storage survivent)
+docker compose -f docker-compose.yml -f docker-compose.preprod.yml up -d --build   # pré-production locale
 ```
+
+La pré-production locale applique la configuration de production à l'API (`NODE_ENV=production` : secrets exigés, Swagger coupé) et ferme le port PostgreSQL sur l'hôte, mais garde Nginx en HTTP sur 8080 — `docker-compose.prod.yml` exige un domaine et un certificat. Dans ce mode, `npm run start:dev`, Prisma Studio et `psql` depuis l'hôte n'atteignent plus la base ; `docker compose up -d` revient au mode développement.
 
 Backend (`cd backend`) :
 
