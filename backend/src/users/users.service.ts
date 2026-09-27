@@ -125,6 +125,15 @@ export class UsersService {
       throw new ForbiddenException('Impossible de desactiver son propre compte');
     }
 
+    // Retirer le dernier administrateur actif laisserait l'application sans personne
+    // pour gerer les comptes, centres et mairies.
+    if (existant.role === Role.ADMIN_NATIONAL && existant.actif && (changeRole || dto.actif === false)) {
+      const autres = await this.prisma.user.count({ where: { role: Role.ADMIN_NATIONAL, actif: true, id: { not: id } } });
+      if (autres === 0) {
+        throw new ForbiddenException({ message: "Dernier administrateur national actif : creer d'abord un autre administrateur", code: 'DERNIER_ADMIN' });
+      }
+    }
+
     const cible: Rattachement = {
       role: dto.role ?? existant.role,
       centreId: changeCentre ? dto.centreId : existant.centreId,

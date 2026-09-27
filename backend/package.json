@@ -18,6 +18,7 @@
     "seed": "ts-node prisma/seed.ts",
     "seed:prod": "node dist/prisma/seed.js",
     "import:decoupage": "ts-node prisma/import-decoupage.ts",
+    "admin:creer": "ts-node prisma/creer-admin.ts",
     "lint:fix": "eslint src prisma --fix"
   },
   "prisma": {

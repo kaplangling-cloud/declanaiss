@@ -1,49 +1,138 @@
 import { useState, type FormEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../lib/api';
-import { LIBELLE_ROLE } from '../../lib/auth';
+import { LIBELLE_ROLE, useAuth } from '../../lib/auth';
 import { Alerte, Modale, fmtDate } from '../../components/ui';
 import type { Role } from '../../types';
 
-interface U { id: string; email: string; nom: string; prenoms: string; role: Role; actif: boolean; derniereConnexion: string | null; centre?: { nom: string } | null; mairie?: { nom: string } | null }
+interface U {
+  id: string; email: string; nom: string; prenoms: string; telephone: string | null; role: Role; actif: boolean;
+  centreId: string | null; mairieId: string | null; doitChangerMotDePasse: boolean; derniereConnexion: string | null;
+  centre?: { nom: string } | null; mairie?: { nom: string } | null;
+}
 
+const ROLES_CENTRE: Role[] = ['PERSONNEL_SANTE', 'CHEF_CENTRE'];
+const ROLES_MAIRIE: Role[] = ['OFFICIER_ETAT_CIVIL', 'SECRETAIRE_MAIRIE'];
+
+/** Comptes utilisateurs : creation, modification et desactivation (administrateur national). */
 export default function Utilisateurs() {
   const qc = useQueryClient();
-  const [ouvert, setOuvert] = useState(false);
+  const { utilisateur: moi } = useAuth();
+  const [creation, setCreation] = useState(false);
+  const [edite, setEdite] = useState<U | null>(null);
   const [role, setRole] = useState<Role>('PERSONNEL_SANTE');
   const [erreur, setErreur] = useState<string | null>(null);
+  const [message, setMessage] = useState<string | null>(null);
   const { data } = useQuery({ queryKey: ['utilisateurs'], queryFn: () => api<U[]>('/utilisateurs') });
   const { data: centres } = useQuery({ queryKey: ['centres'], queryFn: () => api<{ id: string; nom: string }[]>('/centres') });
   const { data: mairies } = useQuery({ queryKey: ['mairies'], queryFn: () => api<{ id: string; nom: string }[]>('/mairies') });
-  const creer = useMutation({ mutationFn: (body: Record<string, string>) => api('/utilisateurs', { method: 'POST', body }), onSuccess: () => { qc.invalidateQueries({ queryKey: ['utilisateurs'] }); setOuvert(false); setErreur(null); }, onError: (e) => setErreur((e as Error).message) });
-  const basculer = useMutation({ mutationFn: (u: U) => api(`/utilisateurs/${u.id}`, { method: 'PATCH', body: { actif: !u.actif } }), onSuccess: () => qc.invalidateQueries({ queryKey: ['utilisateurs'] }) });
 
-  const soumettre = (e: FormEvent<HTMLFormElement>) => {
+  const fermer = () => { setCreation(false); setEdite(null); setErreur(null); };
+  const apresSucces = (texte: string) => { qc.invalidateQueries({ queryKey: ['utilisateurs'] }); fermer(); setMessage(texte); };
+
+  const creer = useMutation({
+    mutationFn: (body: Record<string, string>) => api('/utilisateurs', { method: 'POST', body }),
+    onSuccess: () => apresSucces('Compte créé. Le mot de passe initial devra être changé à la première connexion.'),
+    onError: (e) => setErreur((e as Error).message),
+  });
+  const modifier = useMutation({
+    mutationFn: ({ id, body }: { id: string; body: Record<string, unknown> }) => api(`/utilisateurs/${id}`, { method: 'PATCH', body }),
+    onSuccess: (_r, { body }) => apresSucces(body.motDePasse
+      ? 'Compte modifié. Mot de passe réinitialisé : ses sessions ouvertes sont fermées et il devra le changer à la prochaine connexion.'
+      : 'Compte modifié.'),
+    onError: (e) => setErreur((e as Error).message),
+  });
+  const basculer = useMutation({
+    mutationFn: (u: U) => api(`/utilisateurs/${u.id}`, { method: 'PATCH', body: { actif: !u.actif } }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['utilisateurs'] }),
+    onError: (e) => setMessage(`Échec : ${(e as Error).message}`),
+  });
+
+  const ouvrirCreation = () => { setRole('PERSONNEL_SANTE'); setErreur(null); setMessage(null); setCreation(true); };
+  const ouvrirEdition = (u: U) => { setRole(u.role); setErreur(null); setMessage(null); setEdite(u); };
+
+  const soumettreCreation = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     creer.mutate(Object.fromEntries(Array.from(new FormData(e.currentTarget).entries()).filter(([, v]) => v !== '')) as Record<string, string>);
   };
-  const besoinCentre = role === 'PERSONNEL_SANTE' || role === 'CHEF_CENTRE';
-  const besoinMairie = role === 'OFFICIER_ETAT_CIVIL' || role === 'SECRETAIRE_MAIRIE';
+
+  /** N'envoie que ce qui change : le serveur refuse par ailleurs toute modification hors de ses regles. */
+  const soumettreEdition = (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!edite) return;
+    const fd = new FormData(e.currentTarget);
+    const texte = (k: string) => String(fd.get(k) ?? '').trim();
+    const body: Record<string, unknown> = {};
+    for (const k of ['nom', 'prenoms', 'email'] as const) if (texte(k) && texte(k) !== edite[k]) body[k] = texte(k);
+    if (texte('telephone') !== (edite.telephone ?? '')) body.telephone = texte('telephone');
+    if (role !== edite.role) body.role = role;
+    // Le rattachement suit le role : un compte de centre n'a pas de mairie, et inversement
+    const centreId = ROLES_CENTRE.includes(role) ? texte('centreId') || null : null;
+    const mairieId = ROLES_MAIRIE.includes(role) ? texte('mairieId') || null : null;
+    if (centreId !== edite.centreId) body.centreId = centreId;
+    if (mairieId !== edite.mairieId) body.mairieId = mairieId;
+    const mdp = String(fd.get('motDePasse') ?? '');
+    if (mdp) {
+      if (mdp.length < 12) return setErreur('Le nouveau mot de passe doit comporter au moins 12 caractères');
+      body.motDePasse = mdp;
+    }
+    if (!Object.keys(body).length) return setErreur('Aucune modification');
+    modifier.mutate({ id: edite.id, body });
+  };
+
+  const SelecteurRattachement = ({ centreId, mairieId }: { centreId?: string | null; mairieId?: string | null }) => (
+    <>
+      {ROLES_CENTRE.includes(role) && <div><label>Centre de santé</label><select name="centreId" className="input" required defaultValue={centreId ?? ''}><option value="">—</option>{(centres ?? []).map((c) => <option key={c.id} value={c.id}>{c.nom}</option>)}</select></div>}
+      {ROLES_MAIRIE.includes(role) && <div><label>Mairie</label><select name="mairieId" className="input" required defaultValue={mairieId ?? ''}><option value="">—</option>{(mairies ?? []).map((m) => <option key={m.id} value={m.id}>{m.nom}</option>)}</select></div>}
+    </>
+  );
+  const SelecteurRole = () => (
+    <div><label>Rôle</label><select name="role" className="input" value={role} onChange={(e) => setRole(e.target.value as Role)}>{(Object.keys(LIBELLE_ROLE) as Role[]).map((r) => <option key={r} value={r}>{LIBELLE_ROLE[r]}</option>)}</select></div>
+  );
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between"><h1>Comptes utilisateurs</h1><button className="btn-primary" onClick={() => setOuvert(true)}>+ Nouveau compte</button></div>
-      <div className="card">
+      <div className="flex items-center justify-between"><h1>Comptes utilisateurs</h1><button className="btn-primary" onClick={ouvrirCreation}>+ Nouveau compte</button></div>
+      {message && <Alerte type={message.startsWith('Échec') ? 'erreur' : 'succes'}>{message}</Alerte>}
+      <div className="card overflow-x-auto">
         <table className="table"><thead><tr><th>Nom</th><th>E-mail</th><th>Rôle</th><th>Rattachement</th><th>Dernière connexion</th><th>Actif</th><th></th></tr></thead>
           <tbody>{(data ?? []).map((u) => (
-            <tr key={u.id}><td>{u.prenoms} {u.nom}</td><td className="text-xs">{u.email}</td><td className="text-xs">{LIBELLE_ROLE[u.role]}</td><td className="text-xs">{u.centre?.nom ?? u.mairie?.nom ?? 'National'}</td><td className="text-xs">{fmtDate(u.derniereConnexion, true)}</td><td>{u.actif ? 'Oui' : 'Non'}</td>
-              <td className="text-right"><button className="btn-ghost text-xs" onClick={() => basculer.mutate(u)}>{u.actif ? 'Désactiver' : 'Réactiver'}</button></td></tr>))}</tbody></table>
+            <tr key={u.id}>
+              <td>{u.prenoms} {u.nom}{u.doitChangerMotDePasse && <div className="text-xs text-amber-700">mot de passe provisoire</div>}</td>
+              <td className="text-xs">{u.email}</td><td className="text-xs">{LIBELLE_ROLE[u.role]}</td><td className="text-xs">{u.centre?.nom ?? u.mairie?.nom ?? 'National'}</td>
+              <td className="text-xs">{fmtDate(u.derniereConnexion, true)}</td><td>{u.actif ? 'Oui' : 'Non'}</td>
+              <td className="space-x-1 whitespace-nowrap text-right">
+                <button className="btn-ghost text-xs" onClick={() => ouvrirEdition(u)}>Modifier</button>
+                {/* Le serveur refuse de desactiver son propre compte */}
+                {u.id !== moi?.id && <button className="btn-ghost text-xs" onClick={() => basculer.mutate(u)}>{u.actif ? 'Désactiver' : 'Réactiver'}</button>}
+              </td>
+            </tr>))}</tbody></table>
       </div>
-      {ouvert && (
-        <Modale titre="Nouveau compte" onFermer={() => setOuvert(false)}>
-          <form onSubmit={soumettre} className="space-y-3">{erreur && <Alerte type="erreur">{erreur}</Alerte>}
+
+      {creation && (
+        <Modale titre="Nouveau compte" onFermer={fermer}>
+          <form onSubmit={soumettreCreation} className="space-y-3">{erreur && <Alerte type="erreur">{erreur}</Alerte>}
             <div className="grid grid-cols-2 gap-3"><div><label>Nom</label><input name="nom" className="input" required /></div><div><label>Prénom(s)</label><input name="prenoms" className="input" required /></div></div>
             <div><label>E-mail</label><input name="email" type="email" className="input" required /></div>
-            <div><label>Mot de passe initial (12 car. min., à changer à la 1ʳᵉ connexion)</label><input name="motDePasse" type="password" className="input" minLength={12} required /></div>
-            <div><label>Rôle</label><select name="role" className="input" value={role} onChange={(e) => setRole(e.target.value as Role)}>{(Object.keys(LIBELLE_ROLE) as Role[]).map((r) => <option key={r} value={r}>{LIBELLE_ROLE[r]}</option>)}</select></div>
-            {besoinCentre && <div><label>Centre de santé</label><select name="centreId" className="input" required><option value="">—</option>{(centres ?? []).map((c) => <option key={c.id} value={c.id}>{c.nom}</option>)}</select></div>}
-            {besoinMairie && <div><label>Mairie</label><select name="mairieId" className="input" required><option value="">—</option>{(mairies ?? []).map((m) => <option key={m.id} value={m.id}>{m.nom}</option>)}</select></div>}
-            <div className="flex justify-end gap-2"><button type="button" className="btn-secondary" onClick={() => setOuvert(false)}>Annuler</button><button className="btn-primary" disabled={creer.isPending}>Créer</button></div>
+            <div><label>Mot de passe initial (12 car. min., à changer à la 1ʳᵉ connexion)</label><input name="motDePasse" type="password" className="input" minLength={12} required autoComplete="new-password" /></div>
+            <SelecteurRole />
+            <SelecteurRattachement />
+            <div className="flex justify-end gap-2"><button type="button" className="btn-secondary" onClick={fermer}>Annuler</button><button className="btn-primary" disabled={creer.isPending}>Créer</button></div>
+          </form>
+        </Modale>
+      )}
+
+      {edite && (
+        <Modale titre={`Modifier — ${edite.prenoms} ${edite.nom}`} onFermer={fermer}>
+          <form onSubmit={soumettreEdition} className="space-y-3">{erreur && <Alerte type="erreur">{erreur}</Alerte>}
+            <div className="grid grid-cols-2 gap-3"><div><label>Nom</label><input name="nom" className="input" defaultValue={edite.nom} required /></div><div><label>Prénom(s)</label><input name="prenoms" className="input" defaultValue={edite.prenoms} required /></div></div>
+            <div className="grid grid-cols-2 gap-3"><div><label>E-mail (connexion)</label><input name="email" type="email" className="input" defaultValue={edite.email} required /></div><div><label>Téléphone</label><input name="telephone" className="input" defaultValue={edite.telephone ?? ''} /></div></div>
+            <SelecteurRole />
+            <SelecteurRattachement centreId={edite.centreId} mairieId={edite.mairieId} />
+            <div><label>Nouveau mot de passe (facultatif)</label><input name="motDePasse" type="password" className="input" minLength={12} autoComplete="new-password" placeholder="Laisser vide pour ne pas le changer" />
+              <p className="mt-1 text-xs text-gray-500">Réinitialiser ferme toutes les sessions du compte ; le nouveau mot de passe devra être changé à la connexion suivante.</p></div>
+            {edite.id === moi?.id && role !== edite.role && <Alerte type="avert">Vous modifiez votre propre rôle : vous perdrez l'accès à cet écran.</Alerte>}
+            <div className="flex justify-end gap-2"><button type="button" className="btn-secondary" onClick={fermer}>Annuler</button><button className="btn-primary" disabled={modifier.isPending}>Enregistrer</button></div>
           </form>
         </Modale>
       )}

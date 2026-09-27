@@ -22,6 +22,8 @@ const monter = (comptes: CompteFactice[]) => {
     user: {
       findUnique: async ({ where }: { where: { id?: string; email?: string } }) =>
         comptes.find((c) => (where.id ? c.id === where.id : c.email === where.email)) ?? null,
+      count: async ({ where }: { where: { role: Role; actif: boolean; id: { not: string } } }) =>
+        comptes.filter((c) => c.role === where.role && c.actif === where.actif && c.id !== where.id.not).length,
       update: async ({ where, data }: { where: { id: string }; data: Record<string, unknown> }) => {
         appels.mises.push(data);
         const c = comptes.find((x) => x.id === where.id)!;
@@ -104,6 +106,24 @@ describe('UsersService.modifier', () => {
   it('refuse une adresse de connexion deja prise', async () => {
     const { service } = monter([{ ...sageFemme }, { id: 'u-2', email: 'pris@exemple.cm', role: Role.PERSONNEL_SANTE, centreId: 'c-1', mairieId: null, actif: true }]);
     await expect(service.modifier('u-sf', { email: 'pris@exemple.cm' }, admin, ctx)).rejects.toBeInstanceOf(ConflictException);
+  });
+});
+
+describe('UsersService.modifier - dernier administrateur', () => {
+  const adminA: CompteFactice = { id: 'u-a', email: 'a@exemple.cm', role: Role.ADMIN_NATIONAL, centreId: null, mairieId: null, actif: true };
+  const adminB: CompteFactice = { ...adminA, id: 'u-b', email: 'b@exemple.cm' };
+
+  it('refuse de retirer le role ou de desactiver le dernier administrateur actif', async () => {
+    const { service } = monter([{ ...adminA }, { ...adminB, actif: false }]);
+    await expect(service.modifier('u-a', { actif: false }, acteur(Role.ADMIN_NATIONAL, { id: 'u-b' }), ctx)).rejects.toBeInstanceOf(ForbiddenException);
+    await expect(
+      service.modifier('u-a', { role: Role.OFFICIER_ETAT_CIVIL, mairieId: 'm-1' }, acteur(Role.ADMIN_NATIONAL, { id: 'u-a' }), ctx),
+    ).rejects.toBeInstanceOf(ForbiddenException);
+  });
+
+  it("l'autorise lorsqu'un autre administrateur actif demeure", async () => {
+    const { service } = monter([{ ...adminA }, { ...adminB }]);
+    await expect(service.modifier('u-a', { actif: false }, acteur(Role.ADMIN_NATIONAL, { id: 'u-b' }), ctx)).resolves.toBeDefined();
   });
 });
 

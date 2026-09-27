@@ -32,7 +32,10 @@ npm run prisma:migrate             # créer + appliquer une migration (dev)
 npm run prisma:deploy              # appliquer les migrations (prod)
 SEED_PASSWORD='...' npm run seed   # jeu de démonstration ; refuse un mot de passe < 12 caractères
 npm run import:decoupage           # (ré)importer le découpage administratif
+ADMIN_EMAIL='...' npm run admin:creer  # créer un administrateur national, audité ; mot de passe aléatoire affiché une fois
 ```
+
+En conteneur, les scripts compilés s'exécutent depuis `/app` : `docker compose exec -e ADMIN_EMAIL=... app node dist/prisma/creer-admin.js`. Le dernier administrateur national actif ne peut être ni désactivé ni rétrogradé.
 
 Frontend (`cd frontend`) : `npm run dev` (:5173, proxy `/api` → :3000), `npm run build`, `npm run lint`.
 
