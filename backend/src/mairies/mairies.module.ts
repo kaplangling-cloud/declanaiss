@@ -102,6 +102,17 @@ export class MairiesService {
     const avant = await this.obtenir(id);
     return this.prisma.$transaction(async (tx) => {
       const data: ModifierMairieDto & { code?: string } = { ...dto };
+      // Une mairie desactivee continuerait de recevoir les declarations des centres qui
+      // lui sont rattaches : ils doivent d'abord etre reaffectes (ou desactives).
+      if (dto.actif === false && avant.actif) {
+        const centresActifs = await tx.centre.count({ where: { mairieId: id, actif: true } });
+        if (centresActifs > 0) {
+          throw new ForbiddenException({
+            message: `Desactivation impossible : ${centresActifs} centre(s) de sante actif(s) y sont rattache(s) ; les rattacher d'abord a une autre mairie`,
+            code: 'MAIRIE_CENTRES_ACTIFS',
+          });
+        }
+      }
       if (dto.regionId !== undefined || dto.departementId !== undefined || dto.arrondissementId !== undefined) {
         const { arrondissement, code } = await this.circonscription(tx, {
           regionId: dto.regionId ?? avant.regionId,

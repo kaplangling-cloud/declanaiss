@@ -4,7 +4,11 @@ import { api } from '../../lib/api';
 import { Alerte, Modale, fmtDate } from '../../components/ui';
 
 interface Geo { id: string; code: string; nom: string; departements: { id: string; code: string; nom: string; arrondissements: { id: string; code: string; nom: string; codeEtatCivil: string | null }[] }[] }
-interface Mairie { id: string; code: string; nom: string; actif: boolean; region: { nom: string }; arrondissement: { nom: string }; _count: { centres: number; declarations: number; actes: number } }
+interface Mairie {
+  id: string; code: string; nom: string; adresse: string | null; telephone: string | null; email: string | null; actif: boolean;
+  regionId: string; departementId: string; arrondissementId: string;
+  region: { nom: string }; arrondissement: { nom: string }; _count: { centres: number; declarations: number; actes: number };
+}
 interface Centre {
   id: string; code: string; nom: string; adresse: string; numeroAutorisation: string; autorisationDateDelivrance: string; autorisationDateFinValidite: string | null;
   chefNom: string; chefFonction: string; chefContact: string; telephone: string | null; email: string | null; actif: boolean;
@@ -20,6 +24,8 @@ export default function Centres() {
   const qc = useQueryClient();
   const [modale, setModale] = useState<'centre' | 'mairie' | null>(null);
   const [centreEdite, setCentreEdite] = useState<Centre | null>(null);
+  const [mairieEditee, setMairieEditee] = useState<Mairie | null>(null);
+  const [messagePage, setMessagePage] = useState<string | null>(null);
   const [erreur, setErreur] = useState<string | null>(null);
   const [regionId, setRegionId] = useState(''); const [departementId, setDepartementId] = useState(''); const [arrondissementId, setArrondissementId] = useState('');
   const { data: geo } = useQuery({ queryKey: ['referentiel'], queryFn: () => api<Geo[]>('/mairies/referentiel') });
@@ -36,9 +42,17 @@ export default function Centres() {
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['centres'] }); qc.invalidateQueries({ queryKey: ['mairies'] }); setCentreEdite(null); setErreur(null); },
     onError: (e) => setErreur((e as Error).message),
   });
+  const modifierMairie = useMutation({
+    mutationFn: ({ id, body }: { id: string; body: Record<string, unknown> }) => api(`/mairies/${id}`, { method: 'PATCH', body }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['mairies'] }); qc.invalidateQueries({ queryKey: ['centres'] }); setMairieEditee(null); setErreur(null); },
+    onError: (e) => setErreur((e as Error).message),
+  });
   const basculer = useMutation({
     mutationFn: ({ chemin, actif }: { chemin: string; actif: boolean }) => api(chemin, { method: 'PATCH', body: { actif } }),
+    onMutate: () => setMessagePage(null),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['centres'] }); qc.invalidateQueries({ queryKey: ['mairies'] }); },
+    // Ex. mairie a laquelle des centres actifs sont encore rattaches : le refus ne doit pas passer inapercu
+    onError: (e) => setMessagePage((e as Error).message),
   });
 
   const soumettre = (chemin: string) => (e: FormEvent<HTMLFormElement>) => {
@@ -49,6 +63,30 @@ export default function Centres() {
   const region = geo?.find((r) => r.id === regionId); const departement = region?.departements.find((d) => d.id === departementId);
   const arrondissement = departement?.arrondissements.find((a) => a.id === arrondissementId);
   const ouvrir = (m: 'centre' | 'mairie') => { setRegionId(''); setDepartementId(''); setArrondissementId(''); setErreur(null); setModale(m); };
+  const ouvrirEditionMairie = (m: Mairie) => {
+    setRegionId(m.regionId); setDepartementId(m.departementId); setArrondissementId(m.arrondissementId); setErreur(null); setMairieEditee(m);
+  };
+
+  /** N'envoie que les parametres modifies ; le code est recalcule par le serveur si l'arrondissement change. */
+  const soumettreEditionMairie = (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const m = mairieEditee;
+    if (!m) return;
+    const fd = new FormData(e.currentTarget);
+    const texte = (k: string) => String(fd.get(k) ?? '').trim();
+    const body: Record<string, unknown> = {};
+    for (const k of ['nom', 'adresse', 'telephone', 'email'] as const) {
+      if (texte(k) && texte(k) !== (m[k] ?? '')) body[k] = texte(k);
+    }
+    if (m._count.actes === 0) {
+      if (regionId !== m.regionId) body.regionId = regionId;
+      if (departementId !== m.departementId) body.departementId = departementId;
+      if (arrondissementId !== m.arrondissementId) body.arrondissementId = arrondissementId;
+    }
+    if (!Object.keys(body).length) return setErreur('Aucune modification');
+    modifierMairie.mutate({ id: m.id, body });
+  };
+
   const ouvrirEdition = (c: Centre) => {
     setRegionId(c.regionId); setDepartementId(c.departementId); setArrondissementId(c.arrondissementId); setErreur(null); setCentreEdite(c);
   };
@@ -74,16 +112,17 @@ export default function Centres() {
     if (!Object.keys(body).length) return setErreur('Aucune modification');
     modifierCentre.mutate({ id: c.id, body });
   };
-  const SelecteurGeo = () => (
+  const selecteurGeo = (desactive = false) => (
     <div className="grid grid-cols-3 gap-3">
-      <div><label>Région</label><select name="regionId" className="input" required value={regionId} onChange={(e) => { setRegionId(e.target.value); setDepartementId(''); setArrondissementId(''); }}><option value="">—</option>{(geo ?? []).map((r) => <option key={r.id} value={r.id}>{r.nom}</option>)}</select></div>
-      <div><label>Département</label><select name="departementId" className="input" required value={departementId} onChange={(e) => { setDepartementId(e.target.value); setArrondissementId(''); }}><option value="">—</option>{(region?.departements ?? []).map((d) => <option key={d.id} value={d.id}>{d.nom}</option>)}</select></div>
-      <div><label>Arrondissement</label><select name="arrondissementId" className="input" required value={arrondissementId} onChange={(e) => setArrondissementId(e.target.value)}><option value="">—</option>{(departement?.arrondissements ?? []).map((a) => <option key={a.id} value={a.id}>{a.nom}</option>)}</select></div>
+      <div><label>Région</label><select name="regionId" className="input" required disabled={desactive} value={regionId} onChange={(e) => { setRegionId(e.target.value); setDepartementId(''); setArrondissementId(''); }}><option value="">—</option>{(geo ?? []).map((r) => <option key={r.id} value={r.id}>{r.nom}</option>)}</select></div>
+      <div><label>Département</label><select name="departementId" className="input" required disabled={desactive} value={departementId} onChange={(e) => { setDepartementId(e.target.value); setArrondissementId(''); }}><option value="">—</option>{(region?.departements ?? []).map((d) => <option key={d.id} value={d.id}>{d.nom}</option>)}</select></div>
+      <div><label>Arrondissement</label><select name="arrondissementId" className="input" required disabled={desactive} value={arrondissementId} onChange={(e) => setArrondissementId(e.target.value)}><option value="">—</option>{(departement?.arrondissements ?? []).map((a) => <option key={a.id} value={a.id}>{a.nom}</option>)}</select></div>
     </div>
   );
 
   return (
     <div className="space-y-6">
+      {messagePage && <Alerte type="erreur">{messagePage}</Alerte>}
       <div className="flex items-center justify-between"><h1>Centres de santé & mairies</h1><div className="flex gap-2"><button className="btn-secondary" onClick={() => ouvrir('mairie')}>+ Mairie</button><button className="btn-primary" onClick={() => ouvrir('centre')}>+ Centre de santé</button></div></div>
 
       <div className="card"><h2 className="mb-2">Centres de santé</h2>
@@ -98,13 +137,13 @@ export default function Centres() {
         <table className="table"><thead><tr><th>Code</th><th>Mairie</th><th>Localisation</th><th>Centres</th><th>Décl.</th><th>Actes</th><th>Actif</th><th></th></tr></thead>
           <tbody>{(mairies ?? []).map((m) => (
             <tr key={m.id}><td className="font-mono text-xs">{m.code}</td><td>{m.nom}</td><td className="text-xs">{m.arrondissement.nom}, {m.region.nom}</td><td>{m._count.centres}</td><td>{m._count.declarations}</td><td>{m._count.actes}</td><td>{m.actif ? 'Oui' : 'Non'}</td>
-              <td className="text-right"><button className="btn-ghost text-xs" onClick={() => basculer.mutate({ chemin: `/mairies/${m.id}`, actif: !m.actif })}>{m.actif ? 'Désactiver' : 'Réactiver'}</button></td></tr>))}</tbody></table>
+              <td className="whitespace-nowrap text-right"><button className="btn-ghost text-xs" onClick={() => ouvrirEditionMairie(m)}>Modifier</button><button className="btn-ghost text-xs" onClick={() => basculer.mutate({ chemin: `/mairies/${m.id}`, actif: !m.actif })}>{m.actif ? 'Désactiver' : 'Réactiver'}</button></td></tr>))}</tbody></table>
       </div>
 
       {modale === 'mairie' && (
         <Modale titre="Nouvelle mairie" onFermer={() => setModale(null)}>
           <form onSubmit={soumettre('/mairies')} className="space-y-3">{erreur && <Alerte type="erreur">{erreur}</Alerte>}
-            <SelecteurGeo />
+            {selecteurGeo()}
             <div className="grid grid-cols-3 gap-3">
               <div><label>Code</label><input className="input font-mono" value={arrondissement?.codeEtatCivil ?? ''} placeholder="calculé" readOnly tabIndex={-1} /></div>
               <div className="col-span-2"><label>Nom</label><input name="nom" className="input" placeholder={arrondissement ? `Centre d'état civil de ${arrondissement.nom}` : "Centre d'état civil de …"} /></div>
@@ -121,11 +160,33 @@ export default function Centres() {
             <div className="grid grid-cols-3 gap-3"><div><label>Code</label><input name="code" className="input font-mono" pattern="[A-Z0-9]{2,10}" required /></div><div className="col-span-2"><label>Nom du centre</label><input name="nom" className="input" required /></div></div>
             <div><label>Adresse</label><input name="adresse" className="input" required /></div>
             <div className="grid grid-cols-3 gap-3"><div><label>N° d'autorisation</label><input name="numeroAutorisation" className="input" required /></div><div><label>Délivrée le</label><input type="date" name="autorisationDateDelivrance" className="input" required /></div><div><label>Valide jusqu'au</label><input type="date" name="autorisationDateFinValidite" className="input" /></div></div>
-            <SelecteurGeo />
+            {selecteurGeo()}
             <div><label>Mairie de rattachement</label><select name="mairieId" className="input" required><option value="">—</option>{(mairies ?? []).filter((m) => m.actif).map((m) => <option key={m.id} value={m.id}>{m.nom}</option>)}</select></div>
             <div className="grid grid-cols-3 gap-3"><div><label>Chef du centre</label><input name="chefNom" className="input" required /></div><div><label>Fonction</label><input name="chefFonction" className="input" required /></div><div><label>Contact</label><input name="chefContact" className="input" required /></div></div>
             <div className="grid grid-cols-2 gap-3"><div><label>Téléphone</label><input name="telephone" className="input" /></div><div><label>E-mail</label><input name="email" type="email" className="input" /></div></div>
             <div className="flex justify-end gap-2"><button type="button" className="btn-secondary" onClick={() => setModale(null)}>Annuler</button><button className="btn-primary">Créer</button></div>
+          </form>
+        </Modale>
+      )}
+      {mairieEditee && (
+        <Modale titre={`Modifier — ${mairieEditee.nom}`} onFermer={() => { setMairieEditee(null); setErreur(null); }}>
+          <form onSubmit={soumettreEditionMairie} className="space-y-3">{erreur && <Alerte type="erreur">{erreur}</Alerte>}
+            {selecteurGeo(mairieEditee._count.actes > 0)}
+            <div className="grid grid-cols-3 gap-3">
+              <div><label>Code</label><input className="input font-mono" value={mairieEditee._count.actes > 0 ? mairieEditee.code : arrondissement?.codeEtatCivil ?? ''} readOnly tabIndex={-1} /></div>
+              <div className="col-span-2"><label>Nom</label><input name="nom" className="input" required defaultValue={mairieEditee.nom} /></div>
+            </div>
+            <p className="text-xs text-gray-500">
+              {mairieEditee._count.actes > 0
+                ? `Rattachement et code figés : ${mairieEditee._count.actes} acte(s) portent déjà le code ${mairieEditee.code}.`
+                : "Le code suit l'arrondissement (région + département + arrondissement, RDC.xlsx) ; un seul centre d'état civil par arrondissement."}
+            </p>
+            <div className="grid grid-cols-3 gap-3">
+              <div><label>Adresse</label><input name="adresse" className="input" defaultValue={mairieEditee.adresse ?? ''} /></div>
+              <div><label>Téléphone</label><input name="telephone" className="input" defaultValue={mairieEditee.telephone ?? ''} /></div>
+              <div><label>E-mail</label><input name="email" type="email" className="input" defaultValue={mairieEditee.email ?? ''} /></div>
+            </div>
+            <div className="flex justify-end gap-2"><button type="button" className="btn-secondary" onClick={() => { setMairieEditee(null); setErreur(null); }}>Annuler</button><button className="btn-primary" disabled={modifierMairie.isPending}>Enregistrer</button></div>
           </form>
         </Modale>
       )}
@@ -143,7 +204,7 @@ export default function Centres() {
               <div><label>Délivrée le</label><input type="date" name="autorisationDateDelivrance" className="input" required defaultValue={centreEdite.autorisationDateDelivrance.slice(0, 10)} /></div>
               <div><label>Valide jusqu'au</label><input type="date" name="autorisationDateFinValidite" className="input" defaultValue={centreEdite.autorisationDateFinValidite?.slice(0, 10) ?? ''} /></div>
             </div>
-            <SelecteurGeo />
+            {selecteurGeo()}
             <div><label>Mairie de rattachement</label>
               <select name="mairieId" className="input" required defaultValue={centreEdite.mairieId}>
                 {(mairies ?? []).filter((m) => m.actif || m.id === centreEdite.mairieId).map((m) => <option key={m.id} value={m.id}>{m.nom}{m.actif ? '' : ' (inactive)'}</option>)}
