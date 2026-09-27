@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { api, tokens } from '../lib/api';
+import { api } from '../lib/api';
 import { useAuth } from '../lib/auth';
-import { Tuile } from '../components/ui';
+import { Alerte, Tuile } from '../components/ui';
 
 interface Synthese {
   total: number; parStatut: { cle: string; total: number }[]; parModeAccouchement: { cle: string; total: number }[]; parTerme: { cle: string; total: number }[]; parSexe: { cle: string; total: number }[];
@@ -17,9 +17,16 @@ export default function Stats() {
   const { data: s } = useQuery({ queryKey: ['stats', f], queryFn: () => api<Synthese>(`/stats?${qs}`) });
   const { data: centres } = useQuery({ queryKey: ['centres'], queryFn: () => api<{ id: string; nom: string }[]>('/centres'), enabled: !aRole('CHEF_CENTRE') });
 
+  const [erreurExport, setErreurExport] = useState<string | null>(null);
+  // Via api() : jeton renouvele si expire, et une erreur n'est plus enregistree comme un fichier CSV
   const exporter = async () => {
-    const r = await fetch(`${import.meta.env.VITE_API_URL || '/api'}/stats/export.csv?${qs}`, { headers: { Authorization: `Bearer ${tokens.access()}` } });
-    const blob = await r.blob(); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `statistiques-naissances.csv`; a.click();
+    setErreurExport(null);
+    try {
+      const blob = await api<Blob>(`/stats/export.csv?${qs}`, { brut: true });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href = url; a.download = 'statistiques-naissances.csv'; a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch (e) { setErreurExport(`Export impossible : ${(e as Error).message}`); }
   };
   const max = Math.max(1, ...(s?.parPeriode ?? []).map((p) => p.total));
   const lib: Record<string, string> = { VOIE_BASSE: 'Voie basse', CESARIENNE: 'Césarienne', A_TERME: 'À terme', PREMATURE: 'Prématuré', MASCULIN: 'Garçons', FEMININ: 'Filles', NON_RENSEIGNE: 'Non renseigné' };
@@ -27,6 +34,7 @@ export default function Stats() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between"><h1>Statistiques des naissances</h1><button className="btn-secondary" onClick={exporter}>Exporter CSV</button></div>
+      {erreurExport && <Alerte type="erreur">{erreurExport}</Alerte>}
       <div className="card flex flex-wrap gap-3">
         <div><label>Du</label><input type="date" className="input" value={f.du} onChange={(e) => setF({ ...f, du: e.target.value })} /></div>
         <div><label>Au</label><input type="date" className="input" value={f.au} onChange={(e) => setF({ ...f, au: e.target.value })} /></div>

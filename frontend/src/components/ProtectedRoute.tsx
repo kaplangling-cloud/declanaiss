@@ -7,6 +7,8 @@ export function ProtectedRoute({ roles }: { roles?: Role[] }) {
   const location = useLocation();
   if (chargement) return <div className="flex h-screen items-center justify-center text-primary-700">Chargement…</div>;
   if (!utilisateur) return <Navigate to="/connexion" state={{ from: location }} replace />;
+  // Mot de passe initial : aucune autre page tant qu'il n'a pas ete change
+  if (utilisateur.doitChangerMotDePasse && location.pathname !== '/mot-de-passe') return <Navigate to="/mot-de-passe" replace />;
   if (roles && !roles.includes(utilisateur.role)) return <Navigate to="/" replace />;
   return <Outlet />;
 }

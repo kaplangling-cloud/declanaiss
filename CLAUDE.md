@@ -70,7 +70,7 @@ Perdre `DATA_ENCRYPTION_KEY` rend les CNI et les pièces jointes définitivement
 
 `NumerotationService` produit `{codeRégion}-{codeCentre}-{année}-{séquence sur 6}-{clé}`. La séquence vient de la table `sequences_declaration`, incrémentée dans la transaction sous un verrou consultatif PostgreSQL propre au centre et à l'année (`pg_advisory_xact_lock`) : les soumissions simultanées sont sérialisées, y compris la première de l'année, qui créerait sinon deux fois la même ligne. La clé de contrôle sur deux caractères (alphabet sans I ni O) détecte les fautes de frappe et de transposition lors d'une saisie manuelle sur la page de vérification publique.
 
-Le numéro d'acte de mairie suit un autre format, `{codeMairie}/{année}/{séquence sur 5}`, sous le même type de verrou, par mairie et par année.
+Le numéro d'acte de mairie suit un autre format, `{codeMairie}/{année}/{séquence sur 5}`, sous le même type de verrou, par mairie et par année. Le dernier numéro est retrouvé par le **maximum numérique** de la séquence, jamais par tri du numéro complet : une mairie peut avoir changé de code en cours d'année (`EBO1/…` puis `09050309/…`), et un tri alphabétique redonnerait la même séquence.
 
 ### Mode hors-ligne et synchronisation
 
@@ -89,6 +89,16 @@ Les données médicales (poids, mode d'accouchement, terme) restent dans la déc
 
 Le rendu est en coordonnées absolues : le pied de page (signatures, QR, code-barres) occupe une bande fixe et le corps est borné pour ne jamais y descendre. Après toute retouche de mise en page, régénérer un acte et le relire, y compris dans le cas défavorable (noms longs, mention marginale, absence de secrétaire).
 
+### Déclaration imprimable (PDF)
+
+`PdfDeclarationService` (`GET /declarations/:id/pdf`) produit la déclaration que le centre remet aux parents pour le guichet de la mairie. Même identité visuelle que l'acte, avec trois différences à préserver :
+
+- l'en-tête porte le rattachement administratif **du centre de santé** (et le Ministère de la Santé publique), pas celui de la mairie ;
+- les données médicales y figurent (constat de l'accouchement) ;
+- le document rappelle qu'il n'est pas un acte, et une déclaration `REJETEE` porte un bandeau « document non définitif ».
+
+Il est généré à la demande, sans copie stockée, et refusé pour un brouillon (pas de numéro). Les CNI sont masquées pour `SECRETAIRE_MAIRIE`, comme à l'écran ; chaque édition est journalisée (`EXPORT`) et tracée dans le journal des accès. Même règle de relecture que pour l'acte après toute retouche de mise en page.
+
 ### Référentiel administratif
 
 10 régions, 58 départements, 360 arrondissements, codes officiels `R09-D50-A309`, dénominations FR (`nom`) et EN (`nomEn`). Source : `RDC.xlsx`, converti une fois en `backend/prisma/data/decoupage-administratif.json` pour éviter d'embarquer un lecteur Excel dans le backend. `import-decoupage.ts` est idempotent et rapproche les lignes existantes par nom normalisé (sans accent ni casse) avant de leur appliquer le code officiel.
@@ -103,5 +113,6 @@ Le code d'une mairie (centre d'état civil) n'est jamais saisi : il dérive de s
 
 - Gardes globales dans cet ordre : `ThrottlerGuard`, puis `JwtAuthGuard`, puis `RolesGuard`. Une route publique se marque `@Public()` ; une route restreinte, `@Roles(...)`.
 - Les contrôleurs reçoivent l'acteur via `@CurrentUser()` et le contexte de requête (IP, user-agent, ressource) via `@RequestContext()` — ce dernier alimente l'audit et le journal des accès.
+- L'IP vient de `req.ip`, avec `trust proxy` réglé sur un seul saut (Nginx) dans `main.ts` (`TRUST_PROXY_HOPS`, 1 par défaut). Ne jamais lire la première valeur de `X-Forwarded-For` : le client la fournit et pourrait falsifier l'audit. Le même `req.ip` alimente la limitation de débit par client.
 - Ne jamais écrire de donnée personnelle dans les logs applicatifs.
 - Les couleurs de l'interface sont le blanc et le vert (`primary` dans `tailwind.config.js`) ; le PDF suit la même identité.

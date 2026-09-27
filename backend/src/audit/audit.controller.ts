@@ -31,8 +31,18 @@ export class AuditController {
     return this.audit.rechercher({
       ...q,
       du: q.du ? new Date(q.du) : undefined,
-      au: q.au ? new Date(q.au) : undefined,
+      au: q.au ? AuditController.finDeJournee(q.au) : undefined,
     });
+  }
+
+  /**
+   * Une date seule (AAAA-MM-JJ) designe la journee entiere : interpretee comme
+   * minuit, elle excluait du resultat toutes les entrees du jour demande.
+   */
+  private static finDeJournee(au: string): Date {
+    const d = new Date(au);
+    if (/^\d{4}-\d{2}-\d{2}$/.test(au)) d.setUTCHours(23, 59, 59, 999);
+    return d;
   }
 
   /** Verification d'integrite de la chaine de hash. */

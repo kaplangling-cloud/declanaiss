@@ -27,11 +27,15 @@ export const CurrentUser = createParamDecorator(
   },
 );
 
-/** Contexte de la requete pour la journalisation (IP, user-agent). */
+/**
+ * Contexte de la requete pour la journalisation (IP, user-agent).
+ * L'IP est celle qu'Express deduit selon `trust proxy` (cf. main.ts) : la premiere
+ * valeur de X-Forwarded-For est fournie par le client et pouvait falsifier l'audit.
+ */
 export const RequestContext = createParamDecorator((_data: unknown, ctx: ExecutionContext) => {
   const req = ctx.switchToHttp().getRequest();
   return {
-    ip: (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() || req.ip,
+    ip: req.ip as string | undefined,
     userAgent: req.headers['user-agent'] as string | undefined,
     ressource: `${req.method} ${req.route?.path ?? req.url}`,
   };
