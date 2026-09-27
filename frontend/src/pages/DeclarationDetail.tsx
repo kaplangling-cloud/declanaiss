@@ -32,6 +32,13 @@ export default function DeclarationDetail() {
     const blob = await api<Blob>(`/actes/${acteId}/pdf`, { brut: true });
     window.open(URL.createObjectURL(blob), '_blank');
   };
+  /** Déclaration imprimable remise aux parents pour le guichet de la mairie. */
+  const ouvrirDeclarationPdf = async () => {
+    try {
+      const blob = await api<Blob>(`/declarations/${id}/pdf`, { brut: true });
+      window.open(URL.createObjectURL(blob), '_blank');
+    } catch (e) { echec(e); }
+  };
   const ouvrirPiece = async (pid: string) => {
     const blob = await api<Blob>(`/declarations/${id}/pieces/${pid}`, { brut: true });
     window.open(URL.createObjectURL(blob), '_blank');
@@ -60,6 +67,7 @@ export default function DeclarationDetail() {
           {centre && (d.statut === 'BROUILLON' || d.statut === 'REJETEE') && <button className="btn-primary" onClick={() => soumettre.mutate()}>Soumettre à la mairie</button>}
           {officier && (d.statut === 'SOUMISE' || d.statut === 'VERROUILLEE') && <><button className="btn-danger" onClick={() => setModale('rejet')}>Renvoyer pour correction</button><button className="btn-primary" onClick={() => valider.mutate()}>Valider</button></>}
           {officier && d.statut === 'VALIDEE' && !d.acte && <button className="btn-primary" onClick={() => setModale('acte')}>Établir l'acte (PDF)</button>}
+          {d.statut !== 'BROUILLON' && d.numeroDeclaration && <button className="btn-secondary" onClick={ouvrirDeclarationPdf}>Déclaration (PDF)</button>}
           {d.acte && <button className="btn-secondary" onClick={() => ouvrirPdf(d.acte!.id)}>Acte n° {d.acte.numeroActe} — PDF</button>}
           {(officier || aRole('ADMIN_NATIONAL')) && (d.statut === 'VERROUILLEE' || d.statut === 'VALIDEE') && <button className="btn-ghost" onClick={() => setModale('rectif')}>Rectification</button>}
         </div>

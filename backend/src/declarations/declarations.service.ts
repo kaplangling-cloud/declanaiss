@@ -15,6 +15,7 @@ import {
   ElementSyncDto, ListerDeclarationsDto, LotSyncDto, ModifierDeclarationDto,
 } from './dto/declaration.dto';
 import { validerPourSoumission } from './declarations.validation';
+import { ParentDeclare, PdfDeclarationService } from './pdf-declaration.service';
 
 const ROLES_CENTRE: Role[] = [Role.PERSONNEL_SANTE, Role.CHEF_CENTRE];
 const ROLES_MAIRIE: Role[] = [Role.OFFICIER_ETAT_CIVIL, Role.SECRETAIRE_MAIRIE];
@@ -45,6 +46,7 @@ export class DeclarationsService {
     private readonly numerotation: NumerotationService,
     private readonly audit: AuditService,
     private readonly storage: StorageService,
+    private readonly pdfDeclaration: PdfDeclarationService,
     config: ConfigService,
   ) {
     this.fenetreJours = config.get<number>('metier.modificationWindowDays') ?? 7;
@@ -462,6 +464,94 @@ export class DeclarationsService {
       d = await this.soumettre(d.id, acteur, ctx);
     }
     return { clientUuid: el.clientUuid, resultat, id: d.id, version: d.version, statut: d.statut, numeroDeclaration: d.numeroDeclaration };
+  }
+
+  // =====================================================================
+  //  Declaration imprimable (remise aux parents pour la mairie)
+  // =====================================================================
+
+  /**
+   * PDF de la declaration, genere a la demande : aucune copie n'est stockee,
+   * le document reflete donc toujours l'etat courant du dossier.
+   * Un brouillon n'est pas imprimable : sans numero, il ne prouve rien.
+   */
+  async genererPdf(id: string, acteur: UtilisateurCourant, ctx: ContexteRequete) {
+    const d = await this.prisma.declaration.findFirst({
+      where: { id, ...this.perimetre(acteur) },
+      include: {
+        // En-tete : rattachement administratif du CENTRE DE SANTE (et non de la mairie)
+        centre: { include: { region: true, departement: true, arrondissement: true } },
+        mairie: { select: { nom: true } },
+        accoucheur: true,
+        acte: { select: { numeroActe: true, annuleLe: true } },
+      },
+    });
+    if (!d) throw new NotFoundException('Declaration introuvable');
+    if (d.statut === StatutDeclaration.BROUILLON || !d.numeroDeclaration) {
+      throw new BadRequestException({
+        message: "La declaration doit etre soumise a la mairie avant d'etre imprimee",
+        code: 'DECLARATION_NON_SOUMISE',
+      });
+    }
+
+    // Les CNI suivent la meme regle qu'a l'ecran : masquees pour un secretaire de mairie
+    const peutVoirCni = acteur.role !== Role.SECRETAIRE_MAIRIE;
+    const source = d as unknown as Record<string, unknown>;
+    const parent = (p: 'pere' | 'mere'): ParentDeclare => {
+      const chiffre = source[`${p}CniNumeroChiffre`] as string | null;
+      return {
+        nom: source[`${p}Nom`] as string | null,
+        prenoms: source[`${p}Prenoms`] as string | null,
+        dateNaissance: source[`${p}DateNaissance`] as Date | null,
+        lieuNaissance: source[`${p}LieuNaissance`] as string | null,
+        domicile: source[`${p}Domicile`] as string | null,
+        profession: source[`${p}Profession`] as string | null,
+        nationalite: source[`${p}Nationalite`] as string | null,
+        cniNumero: peutVoirCni ? this.crypto.dechiffrer(chiffre) : (chiffre ? '••••' : null),
+        cniDateDelivrance: source[`${p}CniDateDelivrance`] as Date | null,
+      };
+    };
+
+    const declarant = d.declarantEstPersonnel
+      ? `${d.accoucheur?.prenoms ?? ''} ${d.accoucheur?.nom ?? ''} (${d.accoucheur?.fonction ?? 'personnel de sante'}, ${d.centre.nom})`.trim()
+      : `${d.declarantPrenoms ?? ''} ${d.declarantNom ?? ''} (${d.declarantQualite ?? ''})`.trim();
+
+    const pdf = await this.pdfDeclaration.generer({
+      numeroDeclaration: d.numeroDeclaration, qrToken: d.qrToken, statut: d.statut,
+      dateSoumission: d.dateSoumission, dateLimiteModification: d.dateLimiteModification,
+      numeroActe: d.acte && !d.acte.annuleLe ? d.acte.numeroActe : null,
+      region: { fr: d.centre.region.nom, en: d.centre.region.nomEn ?? d.centre.region.nom },
+      departement: { fr: d.centre.departement.nom, en: d.centre.departement.nomEn ?? d.centre.departement.nom },
+      arrondissement: { fr: d.centre.arrondissement.nom, en: d.centre.arrondissement.nomEn ?? d.centre.arrondissement.nom },
+      centre: {
+        nom: d.centre.nom, numeroAutorisation: d.centre.numeroAutorisation, adresse: d.centre.adresse,
+        chefNom: d.centre.chefNom, chefFonction: d.centre.chefFonction,
+      },
+      mairie: d.mairie.nom,
+      enfantNom: d.enfantNom ?? '', enfantPrenoms: d.enfantPrenoms ?? '', enfantSexe: d.enfantSexe,
+      enfantDateNaissance: d.enfantDateNaissance, enfantHeureNaissance: d.enfantHeureNaissance,
+      modeAccouchement: d.modeAccouchement, termeGrossesse: d.termeGrossesse, moisGrossesse: d.moisGrossesse,
+      poidsNaissanceGrammes: d.poidsNaissanceGrammes,
+      pere: parent('pere'), mere: parent('mere'),
+      accoucheur: d.accoucheur
+        ? { nom: `${d.accoucheur.prenoms} ${d.accoucheur.nom}`.trim(), fonction: d.accoucheur.fonction, numeroOrdre: d.accoucheur.numeroOrdre }
+        : null,
+      declarant, declarantContact: d.declarantContact, editeLe: new Date(),
+    });
+
+    // Un document quitte le systeme : trace d'audit, en plus du journal des acces
+    await this.audit.journaliser({
+      entite: 'Declaration', entiteId: d.id, declarationId: d.id, action: ActionAudit.EXPORT, acteur,
+      metadonnees: { document: 'declaration-pdf', numeroDeclaration: d.numeroDeclaration, statut: d.statut }, contexte: ctx,
+    });
+    await this.audit.journaliserAcces({
+      acteur, declarationId: d.id, contexte: ctx,
+      champsSensibles: peutVoirCni
+        ? ['pereCniNumero', 'mereCniNumero', 'poidsNaissanceGrammes']
+        : ['poidsNaissanceGrammes'],
+    });
+
+    return { pdf, nom: `declaration-${d.numeroDeclaration}.pdf` };
   }
 
   // =====================================================================

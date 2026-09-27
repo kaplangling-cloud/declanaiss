@@ -76,6 +76,21 @@ export class DeclarationsController {
     return this.declarations.rejeter(id, dto.motif, acteur, ctx);
   }
 
+  /** Declaration imprimable, remise aux parents pour le guichet de la mairie. */
+  @Get(':id/pdf')
+  async pdf(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() acteur: UtilisateurCourant,
+    @RequestContext() ctx: ContexteRequete,
+    @Res() res: Response,
+  ) {
+    const { pdf, nom } = await this.declarations.genererPdf(id, acteur, ctx);
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `inline; filename="${nom}"`);
+    res.setHeader('Cache-Control', 'no-store');
+    res.send(pdf);
+  }
+
   // ---- Pieces jointes ----
 
   @Post(':id/pieces')
