@@ -80,17 +80,47 @@ export class CentresService {
     if (acteur.role !== Role.ADMIN_NATIONAL) {
       this.assurerAcces(acteur, id);
       // Un chef de centre ne peut modifier que les coordonnees, pas le rattachement ni l'autorisation
-      const interdits = ['code', 'numeroAutorisation', 'autorisationDateDelivrance', 'autorisationDateFinValidite', 'regionId', 'departementId', 'arrondissementId', 'mairieId', 'actif'];
-      for (const k of interdits) if ((dto as any)[k] !== undefined) throw new ForbiddenException(`Champ ${k} reserve a l'administrateur national`);
+      const interdits = ['code', 'numeroAutorisation', 'autorisationDateDelivrance', 'autorisationDateFinValidite', 'regionId', 'departementId', 'arrondissementId', 'mairieId', 'actif'] as const;
+      for (const k of interdits) if (dto[k] !== undefined) throw new ForbiddenException(`Champ ${k} reserve a l'administrateur national`);
     }
-    await this.validerHierarchie(dto);
+
+    // La coherence region > departement > arrondissement porte sur l'etat qui resultera
+    // de la modification : validee sur les seuls champs envoyes, changer l'arrondissement
+    // seul pouvait le placer hors de la region du centre.
+    const changeGeo = dto.regionId !== undefined || dto.departementId !== undefined || dto.arrondissementId !== undefined;
+    await this.validerHierarchie({
+      ...(changeGeo
+        ? {
+            regionId: dto.regionId ?? avant.regionId,
+            departementId: dto.departementId ?? avant.departementId,
+            arrondissementId: dto.arrondissementId ?? avant.arrondissementId,
+          }
+        : {}),
+      mairieId: dto.mairieId !== avant.mairieId ? dto.mairieId : undefined,
+    });
+
+    // Le code entre dans chaque numero de declaration : fige des la premiere numerotation.
+    // (Controle d'integrite reserve a l'administrateur, qui voit toutes les declarations.)
+    if (dto.code !== undefined && dto.code !== avant.code) {
+      const numerotees = await this.prisma.declaration.count({ where: { centreId: id, numeroDeclaration: { not: null } } });
+      if (numerotees > 0) {
+        throw new ForbiddenException({
+          message: `Code non modifiable : ${numerotees} declaration(s) portent deja le code ${avant.code}`,
+          code: 'CODE_CENTRE_FIGE',
+        });
+      }
+    }
+
     return this.prisma.$transaction(async (tx) => {
       const centre = await tx.centre.update({
         where: { id },
         data: {
           ...dto,
           autorisationDateDelivrance: dto.autorisationDateDelivrance ? new Date(dto.autorisationDateDelivrance) : undefined,
-          autorisationDateFinValidite: dto.autorisationDateFinValidite ? new Date(dto.autorisationDateFinValidite) : undefined,
+          // null efface la date de fin (autorisation sans limite) ; absent, elle est conservee
+          autorisationDateFinValidite:
+            dto.autorisationDateFinValidite === null ? null
+            : dto.autorisationDateFinValidite ? new Date(dto.autorisationDateFinValidite) : undefined,
           desactiveLe: dto.actif === false ? new Date() : dto.actif === true ? null : undefined,
         },
         include: INCLUDE_CENTRE,

@@ -5,12 +5,21 @@ import { Alerte, Modale, fmtDate } from '../../components/ui';
 
 interface Geo { id: string; code: string; nom: string; departements: { id: string; code: string; nom: string; arrondissements: { id: string; code: string; nom: string; codeEtatCivil: string | null }[] }[] }
 interface Mairie { id: string; code: string; nom: string; actif: boolean; region: { nom: string }; arrondissement: { nom: string }; _count: { centres: number; declarations: number; actes: number } }
-interface Centre { id: string; code: string; nom: string; adresse: string; numeroAutorisation: string; autorisationDateDelivrance: string; autorisationDateFinValidite: string | null; chefNom: string; chefFonction: string; chefContact: string; actif: boolean; mairie: { nom: string }; region: { nom: string }; _count: { personnels: number; declarations: number } }
+interface Centre {
+  id: string; code: string; nom: string; adresse: string; numeroAutorisation: string; autorisationDateDelivrance: string; autorisationDateFinValidite: string | null;
+  chefNom: string; chefFonction: string; chefContact: string; telephone: string | null; email: string | null; actif: boolean;
+  regionId: string; departementId: string; arrondissementId: string; mairieId: string;
+  mairie: { nom: string }; region: { nom: string }; _count: { personnels: number; declarations: number };
+}
+
+/** Champs texte d'un centre, compares a l'existant pour n'envoyer que ce qui change. */
+const CHAMPS_CENTRE = ['code', 'nom', 'adresse', 'numeroAutorisation', 'chefNom', 'chefFonction', 'chefContact', 'telephone', 'email'] as const;
 
 /** Gestion des centres de sante et des mairies rattachees (admin national). */
 export default function Centres() {
   const qc = useQueryClient();
   const [modale, setModale] = useState<'centre' | 'mairie' | null>(null);
+  const [centreEdite, setCentreEdite] = useState<Centre | null>(null);
   const [erreur, setErreur] = useState<string | null>(null);
   const [regionId, setRegionId] = useState(''); const [departementId, setDepartementId] = useState(''); const [arrondissementId, setArrondissementId] = useState('');
   const { data: geo } = useQuery({ queryKey: ['referentiel'], queryFn: () => api<Geo[]>('/mairies/referentiel') });
@@ -20,6 +29,11 @@ export default function Centres() {
   const creer = useMutation({
     mutationFn: ({ chemin, body }: { chemin: string; body: Record<string, string> }) => api(chemin, { method: 'POST', body }),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['centres'] }); qc.invalidateQueries({ queryKey: ['mairies'] }); setModale(null); setErreur(null); },
+    onError: (e) => setErreur((e as Error).message),
+  });
+  const modifierCentre = useMutation({
+    mutationFn: ({ id, body }: { id: string; body: Record<string, unknown> }) => api(`/centres/${id}`, { method: 'PATCH', body }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['centres'] }); qc.invalidateQueries({ queryKey: ['mairies'] }); setCentreEdite(null); setErreur(null); },
     onError: (e) => setErreur((e as Error).message),
   });
   const basculer = useMutation({
@@ -35,6 +49,31 @@ export default function Centres() {
   const region = geo?.find((r) => r.id === regionId); const departement = region?.departements.find((d) => d.id === departementId);
   const arrondissement = departement?.arrondissements.find((a) => a.id === arrondissementId);
   const ouvrir = (m: 'centre' | 'mairie') => { setRegionId(''); setDepartementId(''); setArrondissementId(''); setErreur(null); setModale(m); };
+  const ouvrirEdition = (c: Centre) => {
+    setRegionId(c.regionId); setDepartementId(c.departementId); setArrondissementId(c.arrondissementId); setErreur(null); setCentreEdite(c);
+  };
+
+  /** N'envoie que les parametres modifies ; le serveur verifie la coherence de l'ensemble. */
+  const soumettreEdition = (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const c = centreEdite;
+    if (!c) return;
+    const fd = new FormData(e.currentTarget);
+    const texte = (k: string) => String(fd.get(k) ?? '').trim();
+    const jour = (v: string | null) => (v ? v.slice(0, 10) : '');
+    const body: Record<string, unknown> = {};
+    for (const k of CHAMPS_CENTRE) if (texte(k) !== (c[k] ?? '')) body[k] = texte(k) || undefined;
+    if (texte('autorisationDateDelivrance') !== jour(c.autorisationDateDelivrance)) body.autorisationDateDelivrance = texte('autorisationDateDelivrance');
+    // Date de fin videe : autorisation sans limite de validite
+    if (texte('autorisationDateFinValidite') !== jour(c.autorisationDateFinValidite)) body.autorisationDateFinValidite = texte('autorisationDateFinValidite') || null;
+    if (regionId !== c.regionId) body.regionId = regionId;
+    if (departementId !== c.departementId) body.departementId = departementId;
+    if (arrondissementId !== c.arrondissementId) body.arrondissementId = arrondissementId;
+    if (texte('mairieId') !== c.mairieId) body.mairieId = texte('mairieId');
+    for (const k of Object.keys(body)) if (body[k] === undefined) delete body[k];
+    if (!Object.keys(body).length) return setErreur('Aucune modification');
+    modifierCentre.mutate({ id: c.id, body });
+  };
   const SelecteurGeo = () => (
     <div className="grid grid-cols-3 gap-3">
       <div><label>Région</label><select name="regionId" className="input" required value={regionId} onChange={(e) => { setRegionId(e.target.value); setDepartementId(''); setArrondissementId(''); }}><option value="">—</option>{(geo ?? []).map((r) => <option key={r.id} value={r.id}>{r.nom}</option>)}</select></div>
@@ -53,7 +92,7 @@ export default function Centres() {
             <tr key={c.id}><td className="font-mono text-xs">{c.code}</td><td>{c.nom}<div className="text-xs text-gray-400">{c.adresse}</div></td>
               <td className="text-xs">{c.numeroAutorisation}<div className="text-gray-400">{fmtDate(c.autorisationDateDelivrance)} → {fmtDate(c.autorisationDateFinValidite)}</div></td>
               <td className="text-xs">{c.chefNom}<div className="text-gray-400">{c.chefFonction} · {c.chefContact}</div></td><td className="text-xs">{c.mairie.nom}</td><td>{c._count.declarations}</td><td>{c.actif ? 'Oui' : 'Non'}</td>
-              <td className="text-right"><button className="btn-ghost text-xs" onClick={() => basculer.mutate({ chemin: `/centres/${c.id}`, actif: !c.actif })}>{c.actif ? 'Désactiver' : 'Réactiver'}</button></td></tr>))}</tbody></table>
+              <td className="whitespace-nowrap text-right"><button className="btn-ghost text-xs" onClick={() => ouvrirEdition(c)}>Modifier</button><button className="btn-ghost text-xs" onClick={() => basculer.mutate({ chemin: `/centres/${c.id}`, actif: !c.actif })}>{c.actif ? 'Désactiver' : 'Réactiver'}</button></td></tr>))}</tbody></table>
       </div>
       <div className="card"><h2 className="mb-2">Mairies (centres d'état civil)</h2>
         <table className="table"><thead><tr><th>Code</th><th>Mairie</th><th>Localisation</th><th>Centres</th><th>Décl.</th><th>Actes</th><th>Actif</th><th></th></tr></thead>
@@ -87,6 +126,40 @@ export default function Centres() {
             <div className="grid grid-cols-3 gap-3"><div><label>Chef du centre</label><input name="chefNom" className="input" required /></div><div><label>Fonction</label><input name="chefFonction" className="input" required /></div><div><label>Contact</label><input name="chefContact" className="input" required /></div></div>
             <div className="grid grid-cols-2 gap-3"><div><label>Téléphone</label><input name="telephone" className="input" /></div><div><label>E-mail</label><input name="email" type="email" className="input" /></div></div>
             <div className="flex justify-end gap-2"><button type="button" className="btn-secondary" onClick={() => setModale(null)}>Annuler</button><button className="btn-primary">Créer</button></div>
+          </form>
+        </Modale>
+      )}
+      {centreEdite && (
+        <Modale titre={`Modifier — ${centreEdite.nom}`} onFermer={() => { setCentreEdite(null); setErreur(null); }}>
+          <form onSubmit={soumettreEdition} className="space-y-3 max-h-[75vh] overflow-y-auto pr-1">{erreur && <Alerte type="erreur">{erreur}</Alerte>}
+            <div className="grid grid-cols-3 gap-3">
+              <div><label>Code</label><input name="code" className="input font-mono" pattern="[A-Z0-9]{2,10}" required defaultValue={centreEdite.code} /></div>
+              <div className="col-span-2"><label>Nom du centre</label><input name="nom" className="input" required defaultValue={centreEdite.nom} /></div>
+            </div>
+            <p className="text-xs text-gray-500">Le code entre dans le numéro des déclarations : il n'est plus modifiable dès qu'une déclaration a été numérotée.</p>
+            <div><label>Adresse</label><input name="adresse" className="input" required defaultValue={centreEdite.adresse} /></div>
+            <div className="grid grid-cols-3 gap-3">
+              <div><label>N° d'autorisation</label><input name="numeroAutorisation" className="input" required defaultValue={centreEdite.numeroAutorisation} /></div>
+              <div><label>Délivrée le</label><input type="date" name="autorisationDateDelivrance" className="input" required defaultValue={centreEdite.autorisationDateDelivrance.slice(0, 10)} /></div>
+              <div><label>Valide jusqu'au</label><input type="date" name="autorisationDateFinValidite" className="input" defaultValue={centreEdite.autorisationDateFinValidite?.slice(0, 10) ?? ''} /></div>
+            </div>
+            <SelecteurGeo />
+            <div><label>Mairie de rattachement</label>
+              <select name="mairieId" className="input" required defaultValue={centreEdite.mairieId}>
+                {(mairies ?? []).filter((m) => m.actif || m.id === centreEdite.mairieId).map((m) => <option key={m.id} value={m.id}>{m.nom}{m.actif ? '' : ' (inactive)'}</option>)}
+              </select>
+              <p className="mt-1 text-xs text-gray-500">Les déclarations déjà transmises restent à leur mairie ; les suivantes, y compris les brouillons en cours, iront à la nouvelle.</p>
+            </div>
+            <div className="grid grid-cols-3 gap-3">
+              <div><label>Chef du centre</label><input name="chefNom" className="input" required defaultValue={centreEdite.chefNom} /></div>
+              <div><label>Fonction</label><input name="chefFonction" className="input" required defaultValue={centreEdite.chefFonction} /></div>
+              <div><label>Contact</label><input name="chefContact" className="input" required defaultValue={centreEdite.chefContact} /></div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div><label>Téléphone</label><input name="telephone" className="input" defaultValue={centreEdite.telephone ?? ''} /></div>
+              <div><label>E-mail</label><input name="email" type="email" className="input" defaultValue={centreEdite.email ?? ''} /></div>
+            </div>
+            <div className="flex justify-end gap-2"><button type="button" className="btn-secondary" onClick={() => { setCentreEdite(null); setErreur(null); }}>Annuler</button><button className="btn-primary" disabled={modifierCentre.isPending}>Enregistrer</button></div>
           </form>
         </Modale>
       )}

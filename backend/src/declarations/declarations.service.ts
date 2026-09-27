@@ -329,6 +329,10 @@ export class DeclarationsService {
         where: { id },
         data: {
           statut: StatutDeclaration.SOUMISE,
+          // Mairie destinataire fixee a la premiere soumission, d'apres le rattachement
+          // actuel du centre : un brouillon saisi avant un changement de rattachement
+          // partait sinon a l'ancienne mairie.
+          mairieId: premiereSoumission ? centre.mairieId : undefined,
           numeroDeclaration: numero?.numeroDeclaration ?? undefined,
           cleControle: numero?.cleControle ?? undefined,
           dateSoumission: premiereSoumission ? maintenant : undefined,
