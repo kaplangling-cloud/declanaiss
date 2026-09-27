@@ -12,6 +12,7 @@ const SELECTION_PUBLIQUE = {
   derniereConnexion: true, createdAt: true,
   centre: { select: { id: true, nom: true, code: true } },
   mairie: { select: { id: true, nom: true, code: true } },
+  personnelSante: { select: { id: true, fonction: true } },
 } satisfies Prisma.UserSelect;
 
 const ROLES_CENTRE: Role[] = [Role.PERSONNEL_SANTE, Role.CHEF_CENTRE];
@@ -72,9 +73,22 @@ export class UsersService {
     return this.prisma.user.findMany({ where, select: SELECTION_PUBLIQUE, orderBy: [{ nom: 'asc' }] });
   }
 
+  /** La fonction ne concerne que le personnel de sante. */
+  private validerFonction(role: Role, fonction: string | undefined) {
+    if (fonction !== undefined && role !== Role.PERSONNEL_SANTE) {
+      throw new BadRequestException('La fonction ne concerne que les comptes de personnel de sante');
+    }
+  }
+
   async creer(dto: CreerUtilisateurDto, acteur: UtilisateurCourant, ctx: ContexteRequete) {
     this.validerRattachement(dto);
     this.verifierPerimetre(acteur, dto);
+    this.validerFonction(dto.role, dto.fonction);
+    // Un agent de sante declare en tant que docteur, sage-femme ou infirmier(ere)
+    // accoucheur(se) : sa fonction figure sur la declaration et sur l'acte.
+    if (dto.role === Role.PERSONNEL_SANTE && !dto.fonction && !dto.personnelSanteId) {
+      throw new BadRequestException('Fonction obligatoire pour un compte de personnel de sante');
+    }
 
     const cree = await this.prisma.$transaction(async (tx) => {
       const user = await tx.user.create({
@@ -90,13 +104,19 @@ export class UsersService {
       if (dto.personnelSanteId) {
         const p = await tx.personnelSante.findUnique({ where: { id: dto.personnelSanteId } });
         if (!p || p.centreId !== dto.centreId) throw new BadRequestException('Fiche de personnel invalide pour ce centre');
-        await tx.personnelSante.update({ where: { id: p.id }, data: { userId: user.id } });
+        await tx.personnelSante.update({ where: { id: p.id }, data: { userId: user.id, fonction: dto.fonction } });
+      } else if (dto.fonction) {
+        // Fiche de personnel habilite, pour que l'agent figure parmi les accoucheurs du centre
+        await tx.personnelSante.create({
+          data: { centreId: dto.centreId!, nom: dto.nom, prenoms: dto.prenoms, telephone: dto.telephone, fonction: dto.fonction, userId: user.id },
+        });
       }
       await this.audit.journaliser({
         entite: 'User', entiteId: user.id, action: ActionAudit.CREATION_COMPTE, acteur,
-        valeursApres: { email: user.email, role: user.role, centreId: user.centreId, mairieId: user.mairieId }, contexte: ctx,
+        valeursApres: { email: user.email, role: user.role, centreId: user.centreId, mairieId: user.mairieId, fonction: dto.fonction ?? null }, contexte: ctx,
       }, tx);
-      return user;
+      // Relu apres creation de la fiche, pour renvoyer la fonction
+      return tx.user.findUniqueOrThrow({ where: { id: user.id }, select: SELECTION_PUBLIQUE });
     });
     return cree;
   }
@@ -133,6 +153,8 @@ export class UsersService {
         throw new ForbiddenException({ message: "Dernier administrateur national actif : creer d'abord un autre administrateur", code: 'DERNIER_ADMIN' });
       }
     }
+
+    this.validerFonction(dto.role ?? existant.role, dto.fonction);
 
     const cible: Rattachement = {
       role: dto.role ?? existant.role,
@@ -173,6 +195,15 @@ export class UsersService {
           data: { userId: null },
         });
       }
+      // Fonction : portee par la fiche de personnel liee, creee si le compte n'en a pas
+      if (dto.fonction !== undefined) {
+        const lie = await tx.personnelSante.updateMany({ where: { userId: id }, data: { fonction: dto.fonction } });
+        if (lie.count === 0 && cible.centreId) {
+          await tx.personnelSante.create({
+            data: { centreId: cible.centreId, nom: maj.nom, prenoms: maj.prenoms, telephone: maj.telephone, fonction: dto.fonction, userId: id },
+          });
+        }
+      }
 
       await this.audit.journaliser({
         entite: 'User', entiteId: id,
@@ -180,10 +211,16 @@ export class UsersService {
         acteur,
         valeursAvant: { actif: existant.actif, role: existant.role, centreId: existant.centreId, mairieId: existant.mairieId, email: existant.email },
         valeursApres: { actif: maj.actif, role: maj.role, centreId: maj.centreId, mairieId: maj.mairieId, email: maj.email },
-        metadonnees: dto.motDePasse ? { motDePasseReinitialise: true, sessionsRevoquees: true } : undefined,
+        metadonnees: dto.motDePasse || dto.fonction !== undefined
+          ? {
+              ...(dto.motDePasse ? { motDePasseReinitialise: true, sessionsRevoquees: true } : {}),
+              ...(dto.fonction !== undefined ? { fonction: dto.fonction } : {}),
+            }
+          : undefined,
         contexte: ctx,
       }, tx);
-      return maj;
+      // La fiche vient de changer : relire pour renvoyer la fonction a jour
+      return dto.fonction !== undefined ? tx.user.findUniqueOrThrow({ where: { id }, select: SELECTION_PUBLIQUE }) : maj;
     });
   }
 }

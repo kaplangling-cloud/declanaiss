@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../lib/api';
 import { useAuth } from '../../lib/auth';
 import { Alerte, Modale } from '../../components/ui';
-import type { PersonnelSante } from '../../types';
+import { FONCTIONS_PERSONNEL, type PersonnelSante } from '../../types';
 
 export default function Personnel() {
   const { utilisateur, aRole } = useAuth();
@@ -51,7 +51,7 @@ export default function Personnel() {
               <div><label>Nom</label><input name="nom" className="input" required /></div>
               <div><label>Prénom(s)</label><input name="prenoms" className="input" required /></div>
             </div>
-            <div><label>Fonction</label><input name="fonction" className="input" placeholder="Sage-femme, médecin…" required /></div>
+            <div><label>Fonction</label><select name="fonction" className="input" required defaultValue=""><option value="">—</option>{FONCTIONS_PERSONNEL.map((f) => <option key={f} value={f}>{f}</option>)}</select></div>
             <div className="grid grid-cols-2 gap-3">
               <div><label>N° d'ordre professionnel</label><input name="numeroOrdre" className="input" /></div>
               <div><label>Téléphone</label><input name="telephone" className="input" /></div>

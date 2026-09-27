@@ -77,6 +77,9 @@ export interface Rectification {
   demandePar?: { nom: string; prenoms: string }; decidePar?: { nom: string; prenoms: string } | null;
 }
 
+/** Fonctions du personnel de sante habilite (miroir de backend/src/common/referentiel/fonctions-personnel.ts). */
+export const FONCTIONS_PERSONNEL = ['Docteur', 'Sage-femme', 'Infirmier(ère) accoucheur(se)'] as const;
+
 export interface PersonnelSante { id: string; nom: string; prenoms: string; fonction: string; numeroOrdre: string | null; habilite: boolean; user?: { id: string; email: string; actif: boolean } | null }
 
 /** Element de la file de synchronisation locale (IndexedDB). */

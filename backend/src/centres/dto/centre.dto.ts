@@ -1,5 +1,6 @@
 import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
-import { IsBoolean, IsDateString, IsEmail, IsOptional, IsString, IsUUID, Matches, MaxLength } from 'class-validator';
+import { IsBoolean, IsDateString, IsEmail, IsIn, IsOptional, IsString, IsUUID, Matches, MaxLength } from 'class-validator';
+import { FONCTIONS_PERSONNEL, FonctionPersonnel } from '../../common/referentiel/fonctions-personnel';
 
 export class CreerCentreDto {
   @ApiProperty({ example: 'EBOL01' }) @IsString() @Matches(/^[A-Z0-9]{2,10}$/) code!: string;
@@ -30,7 +31,7 @@ export class ModifierCentreDto extends PartialType(CreerCentreDto) {
 export class CreerPersonnelDto {
   @ApiProperty() @IsString() nom!: string;
   @ApiProperty() @IsString() prenoms!: string;
-  @ApiProperty({ example: 'Sage-femme' }) @IsString() fonction!: string;
+  @ApiProperty({ enum: FONCTIONS_PERSONNEL }) @IsIn(FONCTIONS_PERSONNEL) fonction!: FonctionPersonnel;
   @ApiPropertyOptional() @IsOptional() @IsString() numeroOrdre?: string;
   @ApiPropertyOptional() @IsOptional() @IsString() telephone?: string;
 }

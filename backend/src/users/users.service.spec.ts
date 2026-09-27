@@ -127,6 +127,44 @@ describe('UsersService.modifier - dernier administrateur', () => {
   });
 });
 
+describe('UsersService.creer - fonction du personnel de sante', () => {
+  const base = { email: 'n@exemple.cm', motDePasse: 'MotDePasseLong2026', nom: 'NGO', prenoms: 'Rose' };
+
+  /** Base en memoire etendue a la creation d'un compte et de sa fiche. */
+  const monterCreation = () => {
+    const fiches: Array<Record<string, unknown>> = [];
+    const prisma = {
+      user: {
+        create: async ({ data }: { data: Record<string, unknown> }) => ({ id: 'u-nouveau', ...data }),
+        findUniqueOrThrow: async () => ({ id: 'u-nouveau', personnelSante: fiches[0] ?? null }),
+      },
+      personnelSante: { create: async ({ data }: { data: Record<string, unknown> }) => { fiches.push(data); return data; } },
+      $transaction: async (fn: (tx: unknown) => unknown) => fn(prisma),
+    };
+    const audit = { journaliser: jest.fn(async () => undefined) };
+    return { service: new UsersService(prisma as unknown as PrismaService, audit as unknown as AuditService), fiches };
+  };
+
+  it('exige la fonction pour un compte de personnel de sante', async () => {
+    const { service } = monterCreation();
+    await expect(service.creer({ ...base, role: Role.PERSONNEL_SANTE, centreId: 'c-1' }, admin, ctx)).rejects.toBeInstanceOf(BadRequestException);
+  });
+
+  it("refuse une fonction sur un compte qui n'est pas du personnel de sante", async () => {
+    const { service } = monterCreation();
+    await expect(
+      service.creer({ ...base, role: Role.OFFICIER_ETAT_CIVIL, mairieId: 'm-1', fonction: 'Docteur' }, admin, ctx),
+    ).rejects.toBeInstanceOf(BadRequestException);
+  });
+
+  it('cree la fiche de personnel habilite avec la fonction choisie', async () => {
+    const { service, fiches } = monterCreation();
+    const cree = await service.creer({ ...base, role: Role.PERSONNEL_SANTE, centreId: 'c-1', fonction: 'Sage-femme' }, chef, ctx);
+    expect(fiches).toEqual([expect.objectContaining({ centreId: 'c-1', nom: 'NGO', prenoms: 'Rose', fonction: 'Sage-femme', userId: 'u-nouveau' })]);
+    expect(cree).toMatchObject({ personnelSante: { fonction: 'Sage-femme' } });
+  });
+});
+
 describe('UsersService.creer - rattachement', () => {
   it('refuse un compte de centre porteur d une mairie', async () => {
     const { service } = monter([]);
