@@ -5,7 +5,8 @@ import type { Role, Utilisateur } from '../types';
 interface Ctx {
   utilisateur: Utilisateur | null;
   chargement: boolean;
-  connecter: (email: string, motDePasse: string) => Promise<Utilisateur>;
+  /** `identifiant` : adresse e-mail ou nom d'utilisateur. */
+  connecter: (identifiant: string, motDePasse: string) => Promise<Utilisateur>;
   deconnecter: () => Promise<void>;
   aRole: (...roles: Role[]) => boolean;
 }
@@ -35,8 +36,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return tokens.onDeconnexion(() => { setUtilisateur(null); localStorage.removeItem(CLE_UTILISATEUR); });
   }, []);
 
-  const connecter = useCallback(async (email: string, motDePasse: string) => {
-    const r = await api<{ accessToken: string; refreshToken: string; utilisateur: Utilisateur }>('/auth/login', { method: 'POST', body: { email, motDePasse } });
+  const connecter = useCallback(async (identifiant: string, motDePasse: string) => {
+    const r = await api<{ accessToken: string; refreshToken: string; utilisateur: Utilisateur }>('/auth/login', { method: 'POST', body: { identifiant, motDePasse } });
     tokens.set(r.accessToken, r.refreshToken);
     setUtilisateur(r.utilisateur);
     localStorage.setItem(CLE_UTILISATEUR, JSON.stringify(r.utilisateur));

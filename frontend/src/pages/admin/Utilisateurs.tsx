@@ -6,12 +6,15 @@ import { Alerte, Modale, fmtDate } from '../../components/ui';
 import { FONCTIONS_PERSONNEL, type Role } from '../../types';
 
 interface U {
-  id: string; email: string; nom: string; prenoms: string; telephone: string | null; role: Role; actif: boolean;
+  id: string; email: string; nomUtilisateur: string | null; nom: string; prenoms: string; telephone: string | null; role: Role; actif: boolean;
   centreId: string | null; mairieId: string | null; doitChangerMotDePasse: boolean; derniereConnexion: string | null;
   centre?: { nom: string } | null; mairie?: { nom: string } | null; personnelSante?: { id: string; fonction: string } | null;
 }
 
 const ROLES_CENTRE: Role[] = ['PERSONNEL_SANTE', 'CHEF_CENTRE'];
+/** Miroir de backend/src/users/nom-utilisateur.ts (le serveur met en minuscules avant de verifier). */
+const MOTIF_NOM_UTILISATEUR = '[A-Za-z0-9][A-Za-z0-9._\\-]{2,29}';
+const AIDE_NOM_UTILISATEUR = "3 à 30 caractères : lettres sans accent, chiffres, point, tiret, tiret bas. Permet de se connecter sans l'adresse e-mail.";
 const ROLES_MAIRIE: Role[] = ['OFFICIER_ETAT_CIVIL', 'SECRETAIRE_MAIRIE'];
 
 /** Comptes utilisateurs : creation, modification et desactivation (administrateur national). */
@@ -65,6 +68,8 @@ export default function Utilisateurs() {
     const body: Record<string, unknown> = {};
     for (const k of ['nom', 'prenoms', 'email'] as const) if (texte(k) && texte(k) !== edite[k]) body[k] = texte(k);
     if (texte('telephone') !== (edite.telephone ?? '')) body.telephone = texte('telephone');
+    const nomUtilisateur = texte('nomUtilisateur').toLowerCase();
+    if (nomUtilisateur !== (edite.nomUtilisateur ?? '')) body.nomUtilisateur = nomUtilisateur || null;
     if (role !== edite.role) body.role = role;
     // Le rattachement suit le role : un compte de centre n'a pas de mairie, et inversement
     const centreId = ROLES_CENTRE.includes(role) ? texte('centreId') || null : null;
@@ -122,7 +127,7 @@ export default function Utilisateurs() {
           <tbody>{(data ?? []).map((u) => (
             <tr key={u.id}>
               <td>{u.prenoms} {u.nom}{u.doitChangerMotDePasse && <div className="text-xs text-amber-700">mot de passe provisoire</div>}</td>
-              <td className="text-xs">{u.email}</td><td className="text-xs">{LIBELLE_ROLE[u.role]}{u.personnelSante && <div className="text-gray-500">{u.personnelSante.fonction}</div>}</td><td className="text-xs">{u.centre?.nom ?? u.mairie?.nom ?? 'National'}</td>
+              <td className="text-xs">{u.email}{u.nomUtilisateur && <div className="font-mono text-gray-500">@{u.nomUtilisateur}</div>}</td><td className="text-xs">{LIBELLE_ROLE[u.role]}{u.personnelSante && <div className="text-gray-500">{u.personnelSante.fonction}</div>}</td><td className="text-xs">{u.centre?.nom ?? u.mairie?.nom ?? 'National'}</td>
               <td className="text-xs">{fmtDate(u.derniereConnexion, true)}</td><td>{u.actif ? 'Oui' : 'Non'}</td>
               <td className="space-x-1 whitespace-nowrap text-right">
                 <button className="btn-ghost text-xs" onClick={() => ouvrirEdition(u)}>Modifier</button>
@@ -136,7 +141,11 @@ export default function Utilisateurs() {
         <Modale titre="Nouveau compte" onFermer={fermer}>
           <form onSubmit={soumettreCreation} className="space-y-3">{erreur && <Alerte type="erreur">{erreur}</Alerte>}
             <div className="grid grid-cols-2 gap-3"><div><label>Nom</label><input name="nom" className="input" required /></div><div><label>Prénom(s)</label><input name="prenoms" className="input" required /></div></div>
-            <div><label>E-mail</label><input name="email" type="email" className="input" required /></div>
+            <div className="grid grid-cols-2 gap-3">
+              <div><label>E-mail</label><input name="email" type="email" className="input" required /></div>
+              <div><label>Nom d'utilisateur (facultatif)</label><input name="nomUtilisateur" className="input" pattern={MOTIF_NOM_UTILISATEUR} autoCapitalize="none" spellCheck={false} /></div>
+            </div>
+            <p className="-mt-1 text-xs text-gray-500">{AIDE_NOM_UTILISATEUR}</p>
             <div><label>Mot de passe initial (12 car. min., à changer à la 1ʳᵉ connexion)</label><input name="motDePasse" type="password" className="input" minLength={12} required autoComplete="new-password" /></div>
             {selecteurRole()}
             {selecteurRattachement()}
@@ -150,7 +159,12 @@ export default function Utilisateurs() {
         <Modale titre={`Modifier — ${edite.prenoms} ${edite.nom}`} onFermer={fermer}>
           <form onSubmit={soumettreEdition} className="space-y-3">{erreur && <Alerte type="erreur">{erreur}</Alerte>}
             <div className="grid grid-cols-2 gap-3"><div><label>Nom</label><input name="nom" className="input" defaultValue={edite.nom} required /></div><div><label>Prénom(s)</label><input name="prenoms" className="input" defaultValue={edite.prenoms} required /></div></div>
-            <div className="grid grid-cols-2 gap-3"><div><label>E-mail (connexion)</label><input name="email" type="email" className="input" defaultValue={edite.email} required /></div><div><label>Téléphone</label><input name="telephone" className="input" defaultValue={edite.telephone ?? ''} /></div></div>
+            <div className="grid grid-cols-2 gap-3">
+              <div><label>E-mail (connexion)</label><input name="email" type="email" className="input" defaultValue={edite.email} required /></div>
+              <div><label>Nom d'utilisateur</label><input name="nomUtilisateur" className="input" pattern={MOTIF_NOM_UTILISATEUR} autoCapitalize="none" spellCheck={false} defaultValue={edite.nomUtilisateur ?? ''} placeholder="aucun" /></div>
+            </div>
+            <p className="-mt-1 text-xs text-gray-500">{AIDE_NOM_UTILISATEUR} Vider le champ retire le nom d'utilisateur.</p>
+            <div><label>Téléphone</label><input name="telephone" className="input" defaultValue={edite.telephone ?? ''} /></div>
             {selecteurRole()}
             {selecteurRattachement({ centreId: edite.centreId, mairieId: edite.mairieId })}
             {selecteurFonction({ actuelle: edite.personnelSante?.fonction })}

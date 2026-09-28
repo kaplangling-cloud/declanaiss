@@ -6,7 +6,7 @@ import { ContexteRequete, UtilisateurCourant } from '../common/decorators';
 import { UsersService } from './users.service';
 
 type CompteFactice = {
-  id: string; email: string; role: Role; centreId: string | null; mairieId: string | null; actif: boolean;
+  id: string; email: string; role: Role; centreId: string | null; mairieId: string | null; actif: boolean; nomUtilisateur?: string | null;
 };
 
 const ctx: ContexteRequete = { ip: '10.0.0.1', userAgent: 'jest', ressource: 'PATCH /utilisateurs/:id' };
@@ -20,8 +20,10 @@ const monter = (comptes: CompteFactice[]) => {
   const appels = { revocations: [] as unknown[], deliaisons: [] as unknown[], mises: [] as unknown[] };
   const prisma = {
     user: {
-      findUnique: async ({ where }: { where: { id?: string; email?: string } }) =>
-        comptes.find((c) => (where.id ? c.id === where.id : c.email === where.email)) ?? null,
+      findUnique: async ({ where }: { where: { id?: string; email?: string; nomUtilisateur?: string } }) =>
+        comptes.find((c) =>
+          where.id ? c.id === where.id : where.nomUtilisateur ? c.nomUtilisateur === where.nomUtilisateur : c.email === where.email,
+        ) ?? null,
       count: async ({ where }: { where: { role: Role; actif: boolean; id: { not: string } } }) =>
         comptes.filter((c) => c.role === where.role && c.actif === where.actif && c.id !== where.id.not).length,
       update: async ({ where, data }: { where: { id: string }; data: Record<string, unknown> }) => {
@@ -106,6 +108,30 @@ describe('UsersService.modifier', () => {
   it('refuse une adresse de connexion deja prise', async () => {
     const { service } = monter([{ ...sageFemme }, { id: 'u-2', email: 'pris@exemple.cm', role: Role.PERSONNEL_SANTE, centreId: 'c-1', mairieId: null, actif: true }]);
     await expect(service.modifier('u-sf', { email: 'pris@exemple.cm' }, admin, ctx)).rejects.toBeInstanceOf(ConflictException);
+  });
+});
+
+describe("UsersService.modifier - nom d'utilisateur", () => {
+  it("attribue un nom d'utilisateur libre", async () => {
+    const { service, appels } = monter([{ ...sageFemme }]);
+    await service.modifier('u-sf', { nomUtilisateur: 'r.ngo' }, admin, ctx);
+    expect(appels.mises[0]).toMatchObject({ nomUtilisateur: 'r.ngo' });
+  });
+
+  it("refuse un nom d'utilisateur deja pris", async () => {
+    const { service } = monter([{ ...sageFemme }, { id: 'u-2', email: 'x@exemple.cm', nomUtilisateur: 'r.ngo', role: Role.PERSONNEL_SANTE, centreId: 'c-1', mairieId: null, actif: true }]);
+    await expect(service.modifier('u-sf', { nomUtilisateur: 'r.ngo' }, admin, ctx)).rejects.toBeInstanceOf(ConflictException);
+  });
+
+  it("reserve le changement de nom d'utilisateur a l'administrateur", async () => {
+    const { service } = monter([{ ...sageFemme }]);
+    await expect(service.modifier('u-sf', { nomUtilisateur: 'r.ngo' }, chef, ctx)).rejects.toBeInstanceOf(ForbiddenException);
+  });
+
+  it("retire le nom d'utilisateur sur null", async () => {
+    const { service, appels } = monter([{ ...sageFemme, nomUtilisateur: 'r.ngo' }]);
+    await service.modifier('u-sf', { nomUtilisateur: null }, admin, ctx);
+    expect(appels.mises[0]).toMatchObject({ nomUtilisateur: null });
   });
 });
 

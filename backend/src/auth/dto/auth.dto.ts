@@ -1,8 +1,17 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { IsEmail, IsNotEmpty, IsString, MinLength } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { IsEmail, IsNotEmpty, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
 
 export class LoginDto {
-  @ApiProperty() @IsEmail() email!: string;
+  /** Adresse e-mail ou nom d'utilisateur. */
+  @ApiPropertyOptional({ description: "Adresse e-mail ou nom d'utilisateur" })
+  @IsOptional() @IsString() @IsNotEmpty() @MaxLength(254) identifiant?: string;
+
+  /**
+   * Ancienne forme, conservee pour les postes dont l'application hors-ligne n'a pas
+   * encore ete mise a jour : elle envoyait l'adresse sous ce nom.
+   */
+  @ApiPropertyOptional({ deprecated: true }) @IsOptional() @IsEmail() email?: string;
+
   @ApiProperty() @IsString() @IsNotEmpty() motDePasse!: string;
 }
 

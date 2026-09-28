@@ -1,4 +1,4 @@
-import { Body, Controller, Get, HttpCode, Post } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Get, HttpCode, Post } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
@@ -15,7 +15,9 @@ export class AuthController {
   @Post('login')
   @HttpCode(200)
   login(@Body() dto: LoginDto, @RequestContext() ctx: ContexteRequete) {
-    return this.auth.login(dto.email, dto.motDePasse, ctx);
+    const identifiant = dto.identifiant ?? dto.email;
+    if (!identifiant) throw new BadRequestException("Adresse e-mail ou nom d'utilisateur requis");
+    return this.auth.login(identifiant, dto.motDePasse, ctx);
   }
 
   @Public()

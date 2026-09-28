@@ -111,6 +111,12 @@ Il est généré à la demande, sans copie stockée, et refusé pour un brouillo
 
 Le code d'une mairie (centre d'état civil) n'est jamais saisi : il dérive de son arrondissement selon la colonne « Code unique » de `RDC.xlsx`, région sur 2 chiffres + département sur 3 + arrondissement sur 3 (`R09-D50-A309` → `09050309`), via `codeCentreEtatCivil()`. Un seul centre par arrondissement. Ce code entre dans le numéro des actes : une mairie qui en a dressé ne peut plus en changer, et l'import ne réaligne que les mairies sans acte.
 
+### Comptes, centres et mairies
+
+- **Personnel de santé** : un compte `PERSONNEL_SANTE` choisit sa fonction dans `FONCTIONS_PERSONNEL` (`common/referentiel/fonctions-personnel.ts`, reprise dans `frontend/src/types.ts`) — Docteur, Sage-femme, Infirmier(ère) accoucheur(se). La fonction est portée par la fiche `PersonnelSante` liée au compte, créée avec lui : elle figure sur la déclaration et sur l'acte.
+- **Centre** : son code entre dans le numéro de déclaration, il est donc figé dès la première déclaration numérotée. La cohérence région > département > arrondissement se vérifie sur l'état résultant, pas sur les seuls champs envoyés.
+- **Rattachement centre → mairie** : la mairie destinataire d'une déclaration est fixée à sa **première soumission**, d'après le rattachement du centre à ce moment-là (un brouillon antérieur à un changement de rattachement part à la nouvelle mairie). Une mairie à laquelle des centres actifs sont rattachés ne peut pas être désactivée.
+
 ### Extensibilité du modèle
 
 `Declaration` porte `versionModele` et `donneesComplementaires` (JSON) : un champ peut être ajouté progressivement sans migration destructive. Les migrations doivent rester additives.
@@ -120,5 +126,6 @@ Le code d'une mairie (centre d'état civil) n'est jamais saisi : il dérive de s
 - Gardes globales dans cet ordre : `ThrottlerGuard`, puis `JwtAuthGuard`, puis `RolesGuard`. Une route publique se marque `@Public()` ; une route restreinte, `@Roles(...)`.
 - Les contrôleurs reçoivent l'acteur via `@CurrentUser()` et le contexte de requête (IP, user-agent, ressource) via `@RequestContext()` — ce dernier alimente l'audit et le journal des accès.
 - L'IP vient de `req.ip`, avec `trust proxy` réglé sur un seul saut (Nginx) dans `main.ts` (`TRUST_PROXY_HOPS`, 1 par défaut). Ne jamais lire la première valeur de `X-Forwarded-For` : le client la fournit et pourrait falsifier l'audit. Le même `req.ip` alimente la limitation de débit par client.
+- Connexion par adresse e-mail **ou** nom d'utilisateur (`nomUtilisateur`, facultatif, unique, stocké en minuscules) : `POST /auth/login` reçoit `identifiant`, et la présence d'un `@` désigne l'e-mail — d'où l'interdiction du `@` dans un nom d'utilisateur (`users/nom-utilisateur.ts`). L'ancien champ `email` reste accepté pour les postes hors-ligne non mis à jour.
 - Ne jamais écrire de donnée personnelle dans les logs applicatifs.
 - Les couleurs de l'interface sont le blanc et le vert (`primary` dans `tailwind.config.js`) ; le PDF suit la même identité.

@@ -261,6 +261,8 @@ model PersonnelSante {
 model User {
   id             String  @id @default(uuid())
   email          String  @unique
+  // Identifiant de connexion alternatif a l'adresse e-mail (minuscules, sans @)
+  nomUtilisateur String? @unique
   motDePasseHash String
   nom            String
   prenoms        String

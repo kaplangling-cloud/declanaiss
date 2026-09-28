@@ -8,6 +8,7 @@ import { CryptoService } from '../common/services/crypto.service';
 import { AuditService } from '../audit/audit.service';
 import { ContexteRequete, UtilisateurCourant } from '../common/decorators';
 import { JwtPayload } from './strategies/jwt.strategy';
+import { estAdresseEmail } from '../users/nom-utilisateur';
 
 const MAX_TENTATIVES = 5;
 const DUREE_BLOCAGE_MIN = 15;
@@ -35,9 +36,11 @@ export class AuthService {
     await argon2.verify(this.hashFactice, motDePasse).catch(() => false);
   }
 
-  async login(email: string, motDePasse: string, ctx: ContexteRequete) {
+  /** `identifiant` : adresse e-mail, ou nom d'utilisateur (qui ne contient jamais "@"). */
+  async login(identifiant: string, motDePasse: string, ctx: ContexteRequete) {
+    const saisie = identifiant.toLowerCase().trim();
     const user = await this.prisma.user.findUnique({
-      where: { email: email.toLowerCase().trim() },
+      where: estAdresseEmail(saisie) ? { email: saisie } : { nomUtilisateur: saisie },
       include: { centre: { select: { id: true, nom: true, code: true } }, mairie: { select: { id: true, nom: true, code: true } } },
     });
 
@@ -49,7 +52,7 @@ export class AuthService {
       await this.verifierFactice(motDePasse);
       await this.audit.journaliser({
         entite: 'User', entiteId: user?.id ?? 'inconnu', action: ActionAudit.ECHEC_CONNEXION,
-        metadonnees: { email, raison: user ? 'compte inactif' : 'compte inconnu' }, contexte: ctx,
+        metadonnees: { identifiant: saisie, raison: user ? 'compte inactif' : 'compte inconnu' }, contexte: ctx,
       });
       throw echec();
     }

@@ -6,7 +6,7 @@ import { Alerte } from '../components/ui';
 export default function Login() {
   const { utilisateur, connecter } = useAuth();
   const navigate = useNavigate();
-  const [email, setEmail] = useState('');
+  const [identifiant, setIdentifiant] = useState('');
   const [motDePasse, setMotDePasse] = useState('');
   const [erreur, setErreur] = useState<string | null>(null);
   const [enCours, setEnCours] = useState(false);
@@ -15,7 +15,7 @@ export default function Login() {
 
   const soumettre = async (e: FormEvent) => {
     e.preventDefault(); setErreur(null); setEnCours(true);
-    try { await connecter(email, motDePasse); navigate('/'); }
+    try { await connecter(identifiant, motDePasse); navigate('/'); }
     catch (err) { setErreur((err as Error).message || 'Connexion impossible'); }
     finally { setEnCours(false); }
   };
@@ -31,7 +31,7 @@ export default function Login() {
         <form onSubmit={soumettre} className="card space-y-4">
           {erreur && <Alerte type="erreur">{erreur}</Alerte>}
           {!navigator.onLine && <Alerte type="avert">Vous êtes hors ligne : la connexion nécessite le réseau. Une session déjà ouverte reste utilisable.</Alerte>}
-          <div><label>Adresse e-mail</label><input className="input" type="email" autoComplete="username" value={email} onChange={(e) => setEmail(e.target.value)} required /></div>
+          <div><label>Adresse e-mail ou nom d'utilisateur</label><input className="input" type="text" autoComplete="username" autoCapitalize="none" spellCheck={false} value={identifiant} onChange={(e) => setIdentifiant(e.target.value)} required /></div>
           <div><label>Mot de passe</label><input className="input" type="password" autoComplete="current-password" value={motDePasse} onChange={(e) => setMotDePasse(e.target.value)} required /></div>
           <button className="btn-primary w-full" disabled={enCours}>{enCours ? 'Connexion…' : 'Se connecter'}</button>
         </form>

@@ -7,7 +7,7 @@ import { ContexteRequete, UtilisateurCourant } from '../common/decorators';
 import { CreerUtilisateurDto, ModifierUtilisateurDto } from './dto/user.dto';
 
 const SELECTION_PUBLIQUE = {
-  id: true, email: true, nom: true, prenoms: true, telephone: true, role: true,
+  id: true, email: true, nomUtilisateur: true, nom: true, prenoms: true, telephone: true, role: true,
   centreId: true, mairieId: true, actif: true, doitChangerMotDePasse: true,
   derniereConnexion: true, createdAt: true,
   centre: { select: { id: true, nom: true, code: true } },
@@ -73,6 +73,12 @@ export class UsersService {
     return this.prisma.user.findMany({ where, select: SELECTION_PUBLIQUE, orderBy: [{ nom: 'asc' }] });
   }
 
+  private async assurerNomUtilisateurLibre(nomUtilisateur: string) {
+    if (await this.prisma.user.findUnique({ where: { nomUtilisateur }, select: { id: true } })) {
+      throw new ConflictException({ message: "Nom d'utilisateur deja utilise", code: 'NOM_UTILISATEUR_PRIS' });
+    }
+  }
+
   /** La fonction ne concerne que le personnel de sante. */
   private validerFonction(role: Role, fonction: string | undefined) {
     if (fonction !== undefined && role !== Role.PERSONNEL_SANTE) {
@@ -90,10 +96,13 @@ export class UsersService {
       throw new BadRequestException('Fonction obligatoire pour un compte de personnel de sante');
     }
 
+    if (dto.nomUtilisateur) await this.assurerNomUtilisateurLibre(dto.nomUtilisateur);
+
     const cree = await this.prisma.$transaction(async (tx) => {
       const user = await tx.user.create({
         data: {
           email: dto.email.toLowerCase().trim(),
+          nomUtilisateur: dto.nomUtilisateur ?? null,
           motDePasseHash: await argon2.hash(dto.motDePasse),
           nom: dto.nom, prenoms: dto.prenoms, telephone: dto.telephone,
           role: dto.role, centreId: dto.centreId ?? null, mairieId: dto.mairieId ?? null,
@@ -113,7 +122,7 @@ export class UsersService {
       }
       await this.audit.journaliser({
         entite: 'User', entiteId: user.id, action: ActionAudit.CREATION_COMPTE, acteur,
-        valeursApres: { email: user.email, role: user.role, centreId: user.centreId, mairieId: user.mairieId, fonction: dto.fonction ?? null }, contexte: ctx,
+        valeursApres: { email: user.email, nomUtilisateur: user.nomUtilisateur, role: user.role, centreId: user.centreId, mairieId: user.mairieId, fonction: dto.fonction ?? null }, contexte: ctx,
       }, tx);
       // Relu apres creation de la fiche, pour renvoyer la fonction
       return tx.user.findUniqueOrThrow({ where: { id: user.id }, select: SELECTION_PUBLIQUE });
@@ -133,10 +142,11 @@ export class UsersService {
     const changeCentre = dto.centreId !== undefined && dto.centreId !== existant.centreId;
     const changeMairie = dto.mairieId !== undefined && dto.mairieId !== existant.mairieId;
     const changeEmail = email !== undefined && email !== existant.email;
+    const changeNomUtilisateur = dto.nomUtilisateur !== undefined && dto.nomUtilisateur !== existant.nomUtilisateur;
     const changeStructure = changeRole || changeCentre || changeMairie;
 
-    if (acteur.role !== Role.ADMIN_NATIONAL && (changeStructure || changeEmail)) {
-      throw new ForbiddenException("Seul l'administrateur national modifie le role, le rattachement ou l'adresse de connexion");
+    if (acteur.role !== Role.ADMIN_NATIONAL && (changeStructure || changeEmail || changeNomUtilisateur)) {
+      throw new ForbiddenException("Seul l'administrateur national modifie le role, le rattachement ou les identifiants de connexion");
     }
     if (dto.personnelSanteId !== undefined) {
       throw new BadRequestException('La liaison a une fiche de personnel se fait a la creation du compte');
@@ -165,6 +175,7 @@ export class UsersService {
     if (changeEmail && (await this.prisma.user.findUnique({ where: { email: email! }, select: { id: true } }))) {
       throw new ConflictException('Adresse de connexion deja utilisee');
     }
+    if (changeNomUtilisateur && dto.nomUtilisateur) await this.assurerNomUtilisateurLibre(dto.nomUtilisateur);
 
     const data: Prisma.UserUncheckedUpdateInput = {
       nom: dto.nom, prenoms: dto.prenoms, telephone: dto.telephone,
@@ -172,6 +183,7 @@ export class UsersService {
       centreId: changeCentre ? cible.centreId : undefined,
       mairieId: changeMairie ? cible.mairieId : undefined,
       email: changeEmail ? email : undefined,
+      nomUtilisateur: changeNomUtilisateur ? dto.nomUtilisateur : undefined,
       actif: dto.actif,
       desactiveLe: dto.actif === false ? new Date() : dto.actif === true ? null : undefined,
     };
@@ -209,8 +221,8 @@ export class UsersService {
         entite: 'User', entiteId: id,
         action: dto.actif === false ? ActionAudit.DESACTIVATION_COMPTE : ActionAudit.MODIFICATION,
         acteur,
-        valeursAvant: { actif: existant.actif, role: existant.role, centreId: existant.centreId, mairieId: existant.mairieId, email: existant.email },
-        valeursApres: { actif: maj.actif, role: maj.role, centreId: maj.centreId, mairieId: maj.mairieId, email: maj.email },
+        valeursAvant: { actif: existant.actif, role: existant.role, centreId: existant.centreId, mairieId: existant.mairieId, email: existant.email, nomUtilisateur: existant.nomUtilisateur },
+        valeursApres: { actif: maj.actif, role: maj.role, centreId: maj.centreId, mairieId: maj.mairieId, email: maj.email, nomUtilisateur: maj.nomUtilisateur },
         metadonnees: dto.motDePasse || dto.fonction !== undefined
           ? {
               ...(dto.motDePasse ? { motDePasseReinitialise: true, sessionsRevoquees: true } : {}),
