@@ -19,7 +19,8 @@ export default {
           950: '#052416',
         },
       },
-      fontFamily: { sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'] },
+      // Polices definies dans src/index.css (variables --font-sans / --font-mono)
+      fontFamily: { sans: ['var(--font-sans)'], mono: ['var(--font-mono)'] },
       boxShadow: { card: '0 1px 3px rgba(5, 36, 22, 0.08), 0 1px 2px rgba(5, 36, 22, 0.04)' },
     },
   },
