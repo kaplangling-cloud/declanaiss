@@ -16,7 +16,7 @@ const acteur = (role: Role, extra: Partial<UtilisateurCourant> = {}): Utilisateu
 });
 
 /** Base en memoire limitee a ce qu'utilise UsersService. */
-const monter = (comptes: CompteFactice[]) => {
+const monter = (comptes: CompteFactice[], fiches: string[] = []) => {
   const appels = { revocations: [] as unknown[], deliaisons: [] as unknown[], mises: [] as unknown[] };
   const prisma = {
     user: {
@@ -31,9 +31,15 @@ const monter = (comptes: CompteFactice[]) => {
         const c = comptes.find((x) => x.id === where.id)!;
         return { ...c, ...Object.fromEntries(Object.entries(data).filter(([, v]) => v !== undefined)) };
       },
+      findUniqueOrThrow: async ({ where }: { where: { id: string } }) => comptes.find((c) => c.id === where.id)!,
     },
     refreshToken: { updateMany: async (args: unknown) => { appels.revocations.push(args); return { count: 1 }; } },
-    personnelSante: { updateMany: async (args: unknown) => { appels.deliaisons.push(args); return { count: 0 }; } },
+    personnelSante: {
+      updateMany: async (args: unknown) => { appels.deliaisons.push(args); return { count: 0 }; },
+      // Fiche de personnel liee : seuls les comptes listes dans `fiches` en ont une
+      findFirst: async ({ where }: { where: { userId: string } }) => (fiches.includes(where.userId) ? { id: `p-${where.userId}` } : null),
+      create: async ({ data }: { data: Record<string, unknown> }) => data,
+    },
     $transaction: async (fn: (tx: unknown) => unknown) => fn(prisma),
   };
   const audit = { journaliser: jest.fn(async () => undefined) };
@@ -108,6 +114,27 @@ describe('UsersService.modifier', () => {
   it('refuse une adresse de connexion deja prise', async () => {
     const { service } = monter([{ ...sageFemme }, { id: 'u-2', email: 'pris@exemple.cm', role: Role.PERSONNEL_SANTE, centreId: 'c-1', mairieId: null, actif: true }]);
     await expect(service.modifier('u-sf', { email: 'pris@exemple.cm' }, admin, ctx)).rejects.toBeInstanceOf(ConflictException);
+  });
+});
+
+describe('UsersService.modifier - passage au role de personnel de sante', () => {
+  const officier: CompteFactice = { id: 'u-of', email: 'of@exemple.cm', role: Role.OFFICIER_ETAT_CIVIL, centreId: null, mairieId: 'm-1', actif: true };
+  const versSante = { role: Role.PERSONNEL_SANTE, centreId: 'c-1', mairieId: null as unknown as string };
+
+  it('exige une fonction quand le compte n a pas de fiche dans ce centre', async () => {
+    const { service } = monter([{ ...officier }]);
+    await expect(service.modifier('u-of', versSante, admin, ctx)).rejects.toBeInstanceOf(BadRequestException);
+  });
+
+  it('accepte le changement accompagne de la fonction', async () => {
+    const { service, appels } = monter([{ ...officier }]);
+    await service.modifier('u-of', { ...versSante, fonction: 'Docteur' }, admin, ctx);
+    expect(appels.mises[0]).toMatchObject({ role: Role.PERSONNEL_SANTE, centreId: 'c-1' });
+  });
+
+  it('n exige rien de plus si le compte a deja sa fiche', async () => {
+    const { service } = monter([{ ...officier }], ['u-of']);
+    await expect(service.modifier('u-of', versSante, admin, ctx)).resolves.toBeDefined();
   });
 });
 

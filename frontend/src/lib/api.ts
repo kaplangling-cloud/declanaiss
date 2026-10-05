@@ -52,7 +52,14 @@ export async function api<T = unknown>(chemin: string, opts: Options = {}): Prom
   if (!estForm && body !== undefined) h['Content-Type'] = 'application/json';
   if (accessToken) h.Authorization = `Bearer ${accessToken}`;
 
-  const r = await fetch(`${BASE}${chemin}`, { ...rest, headers: h, body: estForm ? (body as FormData) : body !== undefined ? JSON.stringify(body) : undefined });
+  let r: Response;
+  try {
+    r = await fetch(`${BASE}${chemin}`, { ...rest, headers: h, body: estForm ? (body as FormData) : body !== undefined ? JSON.stringify(body) : undefined });
+  } catch {
+    // Serveur injoignable : statut 0, que la synchronisation traite comme une coupure
+    // temporaire. Le message brut du navigateur (« Failed to fetch ») ne disait rien a l'agent.
+    throw new ApiError(0, 'RESEAU', 'Serveur injoignable : vérifiez la connexion réseau, puis réessayez.');
+  }
 
   if (r.status === 401 && retry && tokens.refresh()) {
     if (await rafraichir()) return api<T>(chemin, { ...opts, retry: false });

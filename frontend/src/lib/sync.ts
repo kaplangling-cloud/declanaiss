@@ -83,7 +83,7 @@ export const sync = {
         }
       }
     } catch (e) {
-      if (!(e instanceof ApiError) || e.status >= 500) { /* reseau ou serveur : on reessaiera */ }
+      if (!(e instanceof ApiError) || e.status === 0 || e.status >= 500) { /* reseau ou serveur : on reessaiera */ }
       else for (const b of file) await brouillons.ecrire({ ...b, statutLocal: 'ERREUR', message: (e as Error).message });
     } finally {
       enCours = false; notifier();

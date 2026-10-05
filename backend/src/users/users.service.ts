@@ -172,6 +172,12 @@ export class UsersService {
       mairieId: changeMairie ? dto.mairieId : existant.mairieId,
     };
     if (changeStructure) this.validerRattachement(cible);
+    // Comme a la creation, un compte qui devient personnel de sante doit avoir une fonction,
+    // portee par une fiche de son centre : sans elle, il ne figure pas parmi les accoucheurs.
+    if (changeStructure && cible.role === Role.PERSONNEL_SANTE && dto.fonction === undefined) {
+      const fiche = await this.prisma.personnelSante.findFirst({ where: { userId: id, centreId: cible.centreId ?? undefined }, select: { id: true } });
+      if (!fiche) throw new BadRequestException('Fonction obligatoire pour un compte de personnel de sante');
+    }
     if (changeEmail && (await this.prisma.user.findUnique({ where: { email: email! }, select: { id: true } }))) {
       throw new ConflictException('Adresse de connexion deja utilisee');
     }
