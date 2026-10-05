@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import type { LucideIcon } from 'lucide-react';
 import type { Statut } from '../types';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -31,13 +32,34 @@ export function Alerte({ type = 'info', children }: { type?: 'info' | 'succes' |
   return <div className={`rounded-lg border px-4 py-3 text-sm ${c}`}>{children}</div>;
 }
 
-export function Tuile({ titre, valeur, sous, accent }: { titre: string; valeur: ReactNode; sous?: string; accent?: boolean }) {
-  return (
-    <div className={`card ${accent ? 'border-primary-300 bg-primary-50' : ''}`}>
-      <div className="text-xs font-medium uppercase tracking-wide text-gray-500">{titre}</div>
-      <div className="mt-1 text-3xl font-semibold text-primary-800">{valeur}</div>
-      {sous && <div className="mt-1 text-xs text-gray-500">{sous}</div>}
+/**
+ * Tuile d'indicateur. Avec `onClick`, elle devient un bouton (ex. filtrer la liste
+ * sur le statut compte) ; `actif` signale le filtre en cours.
+ */
+export function Tuile({ titre, valeur, sous, accent, icone: Icone, onClick, actif }: {
+  titre: string; valeur: ReactNode; sous?: string; accent?: boolean; icone?: LucideIcon; onClick?: () => void; actif?: boolean;
+}) {
+  const contenu = (
+    <div className="flex items-start gap-3">
+      {Icone && (
+        <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${accent || actif ? 'bg-primary-600 text-white' : 'bg-primary-50 text-primary-700'}`}>
+          <Icone className="h-5 w-5" aria-hidden />
+        </span>
+      )}
+      <div className="min-w-0">
+        <div className="text-xs font-medium uppercase tracking-wide text-gray-500">{titre}</div>
+        <div className="mt-1 text-3xl font-semibold text-primary-800 tabular-nums">{valeur}</div>
+        {sous && <div className="mt-1 text-xs text-gray-500">{sous}</div>}
+      </div>
     </div>
+  );
+  const cadre = `card ${accent ? 'border-primary-300 bg-primary-50' : ''} ${actif ? 'ring-2 ring-primary-500' : ''}`;
+  if (!onClick) return <div className={cadre}>{contenu}</div>;
+  return (
+    <button type="button" onClick={onClick} aria-pressed={actif}
+      className={`${cadre} w-full text-left transition hover:border-primary-300 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-primary-500`}>
+      {contenu}
+    </button>
   );
 }
 

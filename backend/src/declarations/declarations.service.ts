@@ -218,7 +218,31 @@ export class DeclarationsService {
     const bientotVerrouillees = await this.prisma.declaration.count({
       where: { ...base, statut: StatutDeclaration.SOUMISE, dateLimiteModification: { lte: addDays(new Date(), 2), gt: new Date() } },
     });
-    return { parStatut, bientotVerrouillees };
+    return { parStatut, bientotVerrouillees, parMois: await this.naissancesParMois(base) };
+  }
+
+  /**
+   * Naissances des 12 derniers mois (mois en cours compris), par mois de naissance,
+   * pour les graphiques des tableaux de bord. Les brouillons sont exclus, comme dans
+   * les statistiques ; les mois sans naissance figurent a zero pour un axe continu.
+   */
+  private async naissancesParMois(base: Prisma.DeclarationWhereInput) {
+    const maintenant = new Date();
+    const debut = new Date(Date.UTC(maintenant.getUTCFullYear(), maintenant.getUTCMonth() - 11, 1));
+    const lignes = await this.prisma.declaration.findMany({
+      where: { AND: [base, { statut: { not: StatutDeclaration.BROUILLON }, enfantDateNaissance: { gte: debut } }] },
+      select: { enfantDateNaissance: true },
+    });
+    const parMois = new Map<string, number>();
+    for (let i = 0; i < 12; i++) {
+      const m = new Date(Date.UTC(debut.getUTCFullYear(), debut.getUTCMonth() + i, 1));
+      parMois.set(m.toISOString().slice(0, 7), 0);
+    }
+    for (const l of lignes) {
+      const cle = l.enfantDateNaissance!.toISOString().slice(0, 7);
+      if (parMois.has(cle)) parMois.set(cle, parMois.get(cle)! + 1);
+    }
+    return [...parMois].map(([mois, total]) => ({ mois, total }));
   }
 
   async obtenir(id: string, acteur: UtilisateurCourant, ctx: ContexteRequete) {

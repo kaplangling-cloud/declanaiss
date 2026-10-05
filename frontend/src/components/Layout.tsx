@@ -1,20 +1,31 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
+import {
+  BarChart3, BookOpen, Building2, FilePlus2, Inbox, LayoutDashboard, LogOut, RefreshCw, ScrollText, ShieldCheck, Stethoscope, UserCog,
+  type LucideIcon,
+} from 'lucide-react';
 import { LIBELLE_ROLE, useAuth } from '../lib/auth';
 import { SyncIndicator } from './SyncIndicator';
 
-const NAV: Record<string, { to: string; label: string }[]> = {
+const NAV: Record<string, { to: string; label: string; icone: LucideIcon }[]> = {
   PERSONNEL_SANTE: [
-    { to: '/centre', label: 'Tableau de bord' }, { to: '/centre/nouvelle', label: 'Nouvelle déclaration' }, { to: '/centre/synchronisation', label: 'Synchronisation' },
+    { to: '/centre', label: 'Tableau de bord', icone: LayoutDashboard }, { to: '/centre/nouvelle', label: 'Nouvelle déclaration', icone: FilePlus2 },
+    { to: '/centre/synchronisation', label: 'Synchronisation', icone: RefreshCw },
   ],
   CHEF_CENTRE: [
-    { to: '/centre', label: 'Tableau de bord' }, { to: '/centre/nouvelle', label: 'Nouvelle déclaration' }, { to: '/centre/synchronisation', label: 'Synchronisation' },
-    { to: '/centre/personnel', label: 'Personnel' }, { to: '/stats', label: 'Statistiques' },
+    { to: '/centre', label: 'Tableau de bord', icone: LayoutDashboard }, { to: '/centre/nouvelle', label: 'Nouvelle déclaration', icone: FilePlus2 },
+    { to: '/centre/synchronisation', label: 'Synchronisation', icone: RefreshCw },
+    { to: '/centre/personnel', label: 'Personnel', icone: Stethoscope }, { to: '/stats', label: 'Statistiques', icone: BarChart3 },
   ],
-  OFFICIER_ETAT_CIVIL: [{ to: '/mairie', label: 'Déclarations reçues' }, { to: '/mairie/actes', label: 'Actes' }, { to: '/stats', label: 'Statistiques' }],
-  SECRETAIRE_MAIRIE: [{ to: '/mairie', label: 'Déclarations reçues' }, { to: '/mairie/actes', label: 'Actes' }, { to: '/stats', label: 'Statistiques' }],
+  OFFICIER_ETAT_CIVIL: [
+    { to: '/mairie', label: 'Déclarations reçues', icone: Inbox }, { to: '/mairie/actes', label: 'Actes', icone: BookOpen }, { to: '/stats', label: 'Statistiques', icone: BarChart3 },
+  ],
+  SECRETAIRE_MAIRIE: [
+    { to: '/mairie', label: 'Déclarations reçues', icone: Inbox }, { to: '/mairie/actes', label: 'Actes', icone: BookOpen }, { to: '/stats', label: 'Statistiques', icone: BarChart3 },
+  ],
   ADMIN_NATIONAL: [
-    { to: '/admin', label: 'Supervision' }, { to: '/admin/centres', label: 'Centres & mairies' }, { to: '/admin/utilisateurs', label: 'Comptes' },
-    { to: '/admin/audit', label: "Journal d'audit" }, { to: '/stats', label: 'Statistiques' },
+    { to: '/admin', label: 'Supervision', icone: ShieldCheck }, { to: '/admin/centres', label: 'Centres & mairies', icone: Building2 },
+    { to: '/admin/utilisateurs', label: 'Comptes', icone: UserCog }, { to: '/admin/audit', label: "Journal d'audit", icone: ScrollText },
+    { to: '/stats', label: 'Statistiques', icone: BarChart3 },
   ],
 };
 
@@ -42,8 +53,8 @@ export function Layout() {
               <div className="font-medium">{utilisateur.nomComplet}</div>
               <div className="text-primary-100">{LIBELLE_ROLE[utilisateur.role]}</div>
             </div>
-            <button className="rounded-lg bg-primary-800 px-3 py-1.5 text-xs hover:bg-primary-900" onClick={() => deconnecter().then(() => navigate('/connexion'))}>
-              Déconnexion
+            <button className="inline-flex items-center gap-1.5 rounded-lg bg-primary-800 px-3 py-1.5 text-xs hover:bg-primary-900" onClick={() => deconnecter().then(() => navigate('/connexion'))}>
+              <LogOut className="h-3.5 w-3.5" aria-hidden /> Déconnexion
             </button>
           </div>
         </div>
@@ -51,7 +62,8 @@ export function Layout() {
           <div className="mx-auto flex max-w-7xl gap-1 overflow-x-auto px-4">
             {liens.map((l) => (
               <NavLink key={l.to} to={l.to} end={l.to === '/centre' || l.to === '/mairie' || l.to === '/admin'}
-                className={({ isActive }) => `whitespace-nowrap px-3 py-2 text-sm ${isActive ? 'border-b-2 border-white font-medium' : 'text-primary-100 hover:text-white'}`}>
+                className={({ isActive }) => `inline-flex items-center gap-1.5 whitespace-nowrap px-3 py-2 text-sm ${isActive ? 'border-b-2 border-white font-medium' : 'text-primary-100 hover:text-white'}`}>
+                <l.icone className="h-4 w-4" aria-hidden />
                 {l.label}
               </NavLink>
             ))}

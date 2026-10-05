@@ -4,7 +4,9 @@ import { useQuery } from '@tanstack/react-query';
 import { api } from '../../lib/api';
 import { brouillons } from '../../lib/db';
 import { sync } from '../../lib/sync';
+import { CircleCheck, FilePen, FilePlus2, Lock, RefreshCw, Send } from 'lucide-react';
 import { Alerte, StatutBadge, Tuile, fmtDate } from '../../components/ui';
+import { BarresMois, RepartitionStatuts } from '../../components/Graphiques';
 import type { BrouillonLocal, Declaration, Statut } from '../../types';
 
 const ONGLETS: { cle: string; label: string; statuts: Statut[] }[] = [
@@ -18,7 +20,13 @@ export default function CentreDashboard() {
   const [locaux, setLocaux] = useState<BrouillonLocal[]>([]);
   useEffect(() => { const maj = () => void brouillons.tous().then(setLocaux); maj(); return sync.abonner(maj); }, []);
 
-  const { data: resume } = useQuery({ queryKey: ['resume'], queryFn: () => api<{ parStatut: Record<Statut, number>; bientotVerrouillees: number }>('/declarations/resume'), retry: false });
+  const { data: resume } = useQuery({
+    queryKey: ['resume'],
+    queryFn: () => api<{ parStatut: Record<Statut, number>; bientotVerrouillees: number; parMois: { mois: string; total: number }[] }>('/declarations/resume'),
+    retry: false,
+  });
+  /** Une tuile ou une ligne de la repartition affiche l'onglet qui contient ce statut. */
+  const ongletDe = (s: Statut) => ONGLETS.find((o) => o.statuts.includes(s))?.cle ?? 'encours';
   const statuts = ONGLETS.find((o) => o.cle === onglet)!.statuts;
   const { data, isError } = useQuery({
     queryKey: ['declarations', onglet],
@@ -32,14 +40,29 @@ export default function CentreDashboard() {
   const ps = resume?.parStatut ?? ({} as Record<Statut, number>);
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between"><h1>Tableau de bord du centre</h1><Link to="/centre/nouvelle" className="btn-primary">+ Nouvelle déclaration</Link></div>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h1>Tableau de bord du centre</h1>
+        <div className="flex gap-2">
+          <Link to="/centre/synchronisation" className="btn-secondary"><RefreshCw className="h-4 w-4" aria-hidden /> Synchronisation</Link>
+          <Link to="/centre/nouvelle" className="btn-primary"><FilePlus2 className="h-4 w-4" aria-hidden /> Nouvelle déclaration</Link>
+        </div>
+      </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Tuile titre="En cours (brouillons + à corriger)" valeur={(ps.BROUILLON ?? 0) + (ps.REJETEE ?? 0) + locaux.length} sous={locaux.length ? `${locaux.length} sur ce poste, non synchronisé(s)` : undefined} />
-        <Tuile titre="En attente mairie" valeur={ps.SOUMISE ?? 0} sous={resume?.bientotVerrouillees ? `${resume.bientotVerrouillees} verrouillée(s) sous 48 h` : undefined} accent={!!resume?.bientotVerrouillees} />
-        <Tuile titre="Validées" valeur={ps.VALIDEE ?? 0} />
-        <Tuile titre="Verrouillées" valeur={ps.VERROUILLEE ?? 0} />
+        <Tuile icone={FilePen} titre="En cours (brouillons + à corriger)" valeur={(ps.BROUILLON ?? 0) + (ps.REJETEE ?? 0) + locaux.length} sous={locaux.length ? `${locaux.length} sur ce poste, non synchronisé(s)` : undefined}
+          onClick={() => setOnglet('encours')} actif={onglet === 'encours'} />
+        <Tuile icone={Send} titre="En attente mairie" valeur={ps.SOUMISE ?? 0} sous={resume?.bientotVerrouillees ? `${resume.bientotVerrouillees} verrouillée(s) sous 48 h` : undefined} accent={!!resume?.bientotVerrouillees}
+          onClick={() => setOnglet('attente')} actif={onglet === 'attente'} />
+        <Tuile icone={CircleCheck} titre="Validées" valeur={ps.VALIDEE ?? 0} onClick={() => setOnglet('verrou')} actif={onglet === 'verrou'} />
+        <Tuile icone={Lock} titre="Verrouillées" valeur={ps.VERROUILLEE ?? 0} onClick={() => setOnglet('verrou')} actif={onglet === 'verrou'} />
       </div>
+
+      {resume && (
+        <div className="grid gap-5 lg:grid-cols-3">
+          <div className="lg:col-span-2"><BarresMois donnees={resume.parMois} titre="Naissances déclarées par mois" /></div>
+          <RepartitionStatuts parStatut={ps} onChoisir={(s) => setOnglet(ongletDe(s))} />
+        </div>
+      )}
 
       {isError && <Alerte type="avert">Serveur injoignable : seules les données locales sont affichées.</Alerte>}
 
