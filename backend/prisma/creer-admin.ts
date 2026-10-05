@@ -12,12 +12,10 @@
  */
 import { ActionAudit, PrismaClient, Role } from '@prisma/client';
 import * as argon2 from 'argon2';
-import { randomBytes } from 'crypto';
 import { AuditService } from '../src/audit/audit.service';
 import { PrismaService } from '../src/prisma/prisma.service';
 import { FORMAT_NOM_UTILISATEUR, MESSAGE_FORMAT_NOM_UTILISATEUR } from '../src/users/nom-utilisateur';
-
-const LONGUEUR_MIN = 12;
+import { MESSAGE_MOT_DE_PASSE, defautsMotDePasse, motDePasseAleatoire } from '../src/common/mot-de-passe';
 
 async function main() {
   const email = process.env.ADMIN_EMAIL?.toLowerCase().trim();
@@ -25,10 +23,11 @@ async function main() {
     throw new Error('ADMIN_EMAIL (adresse de connexion valide) doit etre defini');
   }
   const fourni = process.env.ADMIN_PASSWORD;
-  if (fourni !== undefined && fourni.length < LONGUEUR_MIN) {
-    throw new Error(`ADMIN_PASSWORD doit comporter au moins ${LONGUEUR_MIN} caracteres`);
+  if (fourni !== undefined && defautsMotDePasse(fourni).length) {
+    throw new Error(`ADMIN_PASSWORD non conforme. ${MESSAGE_MOT_DE_PASSE} (manque : ${defautsMotDePasse(fourni).join(', ')})`);
   }
-  const motDePasse = fourni ?? randomBytes(15).toString('base64url'); // 20 caracteres
+  // Genere conforme a la politique : un tirage base64 pouvait n'avoir ni chiffre ni caractere special
+  const motDePasse = fourni ?? motDePasseAleatoire();
   const nomUtilisateur = process.env.ADMIN_USERNAME?.trim().toLowerCase() || null;
   if (nomUtilisateur && !FORMAT_NOM_UTILISATEUR.test(nomUtilisateur)) throw new Error(MESSAGE_FORMAT_NOM_UTILISATEUR);
   const nom = process.env.ADMIN_NOM?.trim() || 'ADMINISTRATEUR';

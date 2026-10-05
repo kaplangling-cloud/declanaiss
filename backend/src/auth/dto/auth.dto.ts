@@ -1,5 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsEmail, IsNotEmpty, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
+import { IsEmail, IsNotEmpty, IsOptional, IsString, MaxLength } from 'class-validator';
+import { EstMotDePasseRobuste } from '../../common/mot-de-passe.decorator';
+import { MESSAGE_MOT_DE_PASSE } from '../../common/mot-de-passe';
 
 export class LoginDto {
   /** Adresse e-mail ou nom d'utilisateur. */
@@ -21,5 +23,5 @@ export class RefreshDto {
 
 export class ChangerMotDePasseDto {
   @ApiProperty() @IsString() @IsNotEmpty() ancienMotDePasse!: string;
-  @ApiProperty({ minLength: 12 }) @IsString() @MinLength(12) nouveauMotDePasse!: string;
+  @ApiProperty({ minLength: 8, description: MESSAGE_MOT_DE_PASSE }) @IsString() @EstMotDePasseRobuste() nouveauMotDePasse!: string;
 }

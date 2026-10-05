@@ -1,7 +1,9 @@
 import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
 import { Role } from '@prisma/client';
 import { Transform } from 'class-transformer';
-import { IsBoolean, IsEmail, IsEnum, IsIn, IsOptional, IsString, IsUUID, Matches, MinLength } from 'class-validator';
+import { IsBoolean, IsEmail, IsEnum, IsIn, IsOptional, IsString, IsUUID, Matches } from 'class-validator';
+import { EstMotDePasseRobuste } from '../../common/mot-de-passe.decorator';
+import { MESSAGE_MOT_DE_PASSE } from '../../common/mot-de-passe';
 import { FORMAT_NOM_UTILISATEUR, MESSAGE_FORMAT_NOM_UTILISATEUR, normaliserNomUtilisateur } from '../nom-utilisateur';
 import { FONCTIONS_PERSONNEL, FonctionPersonnel } from '../../common/referentiel/fonctions-personnel';
 
@@ -11,7 +13,7 @@ export class CreerUtilisateurDto {
   @ApiPropertyOptional({ example: 'r.ngo', description: MESSAGE_FORMAT_NOM_UTILISATEUR })
   @IsOptional() @Transform(({ value }) => normaliserNomUtilisateur(value))
   @IsString() @Matches(FORMAT_NOM_UTILISATEUR, { message: MESSAGE_FORMAT_NOM_UTILISATEUR }) nomUtilisateur?: string | null;
-  @ApiProperty({ minLength: 12 }) @IsString() @MinLength(12) motDePasse!: string;
+  @ApiProperty({ minLength: 8, description: MESSAGE_MOT_DE_PASSE }) @IsString() @EstMotDePasseRobuste() motDePasse!: string;
   @ApiProperty() @IsString() nom!: string;
   @ApiProperty() @IsString() prenoms!: string;
   @ApiPropertyOptional() @IsOptional() @IsString() telephone?: string;

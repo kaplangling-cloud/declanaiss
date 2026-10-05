@@ -8,14 +8,15 @@
 import { PrismaClient, Role } from '@prisma/client';
 import * as argon2 from 'argon2';
 import { importerDecoupage } from './import-decoupage';
+import { MESSAGE_MOT_DE_PASSE, defautsMotDePasse } from '../src/common/mot-de-passe';
 import { codeCentreEtatCivil, nomCentreEtatCivil } from '../src/common/referentiel/code-etat-civil';
 
 const prisma = new PrismaClient();
 
 async function main() {
   const motDePasse = process.env.SEED_PASSWORD;
-  if (!motDePasse || motDePasse.length < 12) {
-    throw new Error('SEED_PASSWORD (12 caracteres minimum) doit etre defini pour executer le seed');
+  if (!motDePasse || defautsMotDePasse(motDePasse).length) {
+    throw new Error(`SEED_PASSWORD doit etre defini et conforme. ${MESSAGE_MOT_DE_PASSE}`);
   }
   const hash = await argon2.hash(motDePasse);
 

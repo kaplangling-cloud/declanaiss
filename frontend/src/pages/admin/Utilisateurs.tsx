@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../lib/api';
 import { LIBELLE_ROLE, useAuth } from '../../lib/auth';
 import { Alerte, Modale, fmtDate } from '../../components/ui';
+import { AIDE_MOT_DE_PASSE, erreurMotDePasse } from '../../lib/mot-de-passe';
 import { FONCTIONS_PERSONNEL, type Role } from '../../types';
 
 interface U {
@@ -56,7 +57,10 @@ export default function Utilisateurs() {
 
   const soumettreCreation = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    creer.mutate(Object.fromEntries(Array.from(new FormData(e.currentTarget).entries()).filter(([, v]) => v !== '')) as Record<string, string>);
+    const body = Object.fromEntries(Array.from(new FormData(e.currentTarget).entries()).filter(([, v]) => v !== '')) as Record<string, string>;
+    const nonConforme = erreurMotDePasse(body.motDePasse ?? '');
+    if (nonConforme) return setErreur(nonConforme);
+    creer.mutate(body);
   };
 
   /** N'envoie que ce qui change : le serveur refuse par ailleurs toute modification hors de ses regles. */
@@ -78,7 +82,8 @@ export default function Utilisateurs() {
     if (mairieId !== edite.mairieId) body.mairieId = mairieId;
     const mdp = String(fd.get('motDePasse') ?? '');
     if (mdp) {
-      if (mdp.length < 12) return setErreur('Le nouveau mot de passe doit comporter au moins 12 caractères');
+      const nonConforme = erreurMotDePasse(mdp);
+      if (nonConforme) return setErreur(nonConforme);
       body.motDePasse = mdp;
     }
     const fonction = role === 'PERSONNEL_SANTE' ? texte('fonction') : '';
@@ -146,7 +151,8 @@ export default function Utilisateurs() {
               <div><label>Nom d'utilisateur (facultatif)</label><input name="nomUtilisateur" className="input" pattern={MOTIF_NOM_UTILISATEUR} autoCapitalize="none" spellCheck={false} /></div>
             </div>
             <p className="-mt-1 text-xs text-gray-500">{AIDE_NOM_UTILISATEUR}</p>
-            <div><label>Mot de passe initial (12 car. min., à changer à la 1ʳᵉ connexion)</label><input name="motDePasse" type="password" className="input" minLength={12} required autoComplete="new-password" /></div>
+            <div><label>Mot de passe initial (à changer à la 1ʳᵉ connexion)</label><input name="motDePasse" type="password" className="input" required autoComplete="new-password" />
+              <p className="mt-1 text-xs text-gray-500">{AIDE_MOT_DE_PASSE}</p></div>
             {selecteurRole()}
             {selecteurRattachement()}
             {selecteurFonction()}
@@ -168,8 +174,8 @@ export default function Utilisateurs() {
             {selecteurRole()}
             {selecteurRattachement({ centreId: edite.centreId, mairieId: edite.mairieId })}
             {selecteurFonction({ actuelle: edite.personnelSante?.fonction })}
-            <div><label>Nouveau mot de passe (facultatif)</label><input name="motDePasse" type="password" className="input" minLength={12} autoComplete="new-password" placeholder="Laisser vide pour ne pas le changer" />
-              <p className="mt-1 text-xs text-gray-500">Réinitialiser ferme toutes les sessions du compte ; le nouveau mot de passe devra être changé à la connexion suivante.</p></div>
+            <div><label>Nouveau mot de passe (facultatif)</label><input name="motDePasse" type="password" className="input" autoComplete="new-password" placeholder="Laisser vide pour ne pas le changer" />
+              <p className="mt-1 text-xs text-gray-500">{AIDE_MOT_DE_PASSE} Réinitialiser ferme toutes les sessions du compte ; le nouveau mot de passe devra être changé à la connexion suivante.</p></div>
             {edite.id === moi?.id && role !== edite.role && <Alerte type="avert">Vous modifiez votre propre rôle : vous perdrez l'accès à cet écran.</Alerte>}
             <div className="flex justify-end gap-2"><button type="button" className="btn-secondary" onClick={fermer}>Annuler</button><button className="btn-primary" disabled={modifier.isPending}>Enregistrer</button></div>
           </form>

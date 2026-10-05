@@ -33,7 +33,7 @@ npm test                           # jest : tests unitaires *.spec.ts (hors imag
 npx jest chemin/du.spec.ts         # un seul fichier de test
 npm run prisma:migrate             # créer + appliquer une migration (dev)
 npm run prisma:deploy              # appliquer les migrations (prod)
-SEED_PASSWORD='...' npm run seed   # jeu de démonstration ; refuse un mot de passe < 12 caractères
+SEED_PASSWORD='...' npm run seed   # jeu de démonstration ; mot de passe conforme à la politique (cf. Conventions)
 npm run import:decoupage           # (ré)importer le découpage administratif
 ADMIN_EMAIL='...' npm run admin:creer  # créer un administrateur national, audité ; mot de passe aléatoire affiché une fois
 ```
@@ -127,5 +127,6 @@ Le code d'une mairie (centre d'état civil) n'est jamais saisi : il dérive de s
 - Les contrôleurs reçoivent l'acteur via `@CurrentUser()` et le contexte de requête (IP, user-agent, ressource) via `@RequestContext()` — ce dernier alimente l'audit et le journal des accès.
 - L'IP vient de `req.ip`, avec `trust proxy` réglé sur un seul saut (Nginx) dans `main.ts` (`TRUST_PROXY_HOPS`, 1 par défaut). Ne jamais lire la première valeur de `X-Forwarded-For` : le client la fournit et pourrait falsifier l'audit. Le même `req.ip` alimente la limitation de débit par client.
 - Connexion par adresse e-mail **ou** nom d'utilisateur (`nomUtilisateur`, facultatif, unique, stocké en minuscules) : `POST /auth/login` reçoit `identifiant`, et la présence d'un `@` désigne l'e-mail — d'où l'interdiction du `@` dans un nom d'utilisateur (`users/nom-utilisateur.ts`). L'ancien champ `email` reste accepté pour les postes hors-ligne non mis à jour.
+- **Mots de passe** : 8 caractères minimum, dont une majuscule (accentuée acceptée), un chiffre et un caractère spécial, définis dans `common/mot-de-passe.ts` (décorateur `@EstMotDePasseRobuste()`, miroir `frontend/src/lib/mot-de-passe.ts`). La règle s'applique à chaque mot de passe choisi ou attribué ; un mot de passe enregistré sous l'ancienne règle reste valable jusqu'à son changement. Les scripts génèrent des mots de passe provisoires conformes (`motDePasseAleatoire()`).
 - Ne jamais écrire de donnée personnelle dans les logs applicatifs.
 - Les couleurs de l'interface sont le blanc et le vert (`primary` dans `tailwind.config.js`) ; le PDF suit la même identité.
