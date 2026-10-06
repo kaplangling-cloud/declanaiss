@@ -20,7 +20,7 @@ export default {
         },
       },
       // Polices definies dans src/index.css (variables --font-sans / --font-mono)
-      fontFamily: { sans: ['var(--font-sans)'], mono: ['var(--font-mono)'] },
+      fontFamily: { sans: ['var(--font-sans)'], mono: ['var(--font-mono)'], titre: ['var(--font-titre)'] },
       boxShadow: { card: '0 1px 3px rgba(5, 36, 22, 0.08), 0 1px 2px rgba(5, 36, 22, 0.04)' },
     },
   },

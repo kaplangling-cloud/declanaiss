@@ -43,7 +43,7 @@ export function Layout() {
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-white p-1"><img src="/logo.png" alt="Logo" className="h-full w-full object-contain" /></div>
             <div>
-              <div className="text-sm font-semibold leading-tight">Déclaration de naissance en ligne</div>
+              <div className="font-titre text-sm font-bold uppercase leading-tight tracking-wide">Déclaration de naissance en ligne</div>
               <div className="text-xs text-primary-100">{rattachement}</div>
             </div>
           </div>
@@ -63,7 +63,7 @@ export function Layout() {
             {liens.map((l) => (
               <NavLink key={l.to} to={l.to} end={l.to === '/centre' || l.to === '/mairie' || l.to === '/admin'}
                 // Texte en gras et plus grand ; l'entree active se distingue par le soulignement blanc
-                className={({ isActive }) => `inline-flex items-center gap-2 whitespace-nowrap px-3 py-2.5 text-base font-bold ${isActive ? 'border-b-[3px] border-white text-white' : 'text-primary-100 hover:text-white'}`}>
+                className={({ isActive }) => `inline-flex items-center gap-2 whitespace-nowrap px-3 py-2.5 font-titre text-base font-bold ${isActive ? 'border-b-[3px] border-white text-white' : 'text-primary-100 hover:text-white'}`}>
                 <l.icone className="h-5 w-5" aria-hidden />
                 {l.label}
               </NavLink>

@@ -25,7 +25,7 @@ export default function Login() {
       <div className="w-full max-w-md">
         <div className="mb-6 text-center">
           <img src="/logo.png" alt="Logo" className="mx-auto mb-3 h-24 w-24 object-contain" />
-          <h1>Déclaration de naissance en ligne</h1>
+          <h1 className="font-titre uppercase tracking-wide">Déclaration de naissance en ligne</h1>
           <p className="text-sm text-gray-500">Centres de santé → Mairies</p>
         </div>
         <form onSubmit={soumettre} className="card space-y-4">
