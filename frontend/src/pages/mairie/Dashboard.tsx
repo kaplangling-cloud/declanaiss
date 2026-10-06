@@ -65,7 +65,7 @@ export default function MairieDashboard() {
 
         {Object.entries(parCentre).map(([centre, lignes]) => (
           <div key={centre}>
-            <h2 className="mb-2 text-base">{centre} <span className="text-sm font-normal text-gray-500">({lignes.length})</span></h2>
+            <h2 className="mb-2 text-base">{centre} <span className="text-sm font-normal text-blue-100">({lignes.length})</span></h2>
             <table className="table"><thead><tr><th>N° déclaration</th><th>Enfant</th><th>Né(e) le</th><th>Soumise le</th><th>Statut</th><th>Acte</th><th></th></tr></thead>
               <tbody>{lignes.map((d) => (
                 <tr key={d.id}>

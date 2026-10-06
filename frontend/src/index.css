@@ -37,8 +37,13 @@
     font-size: 16px;
     line-height: 1.5;
   }
-  h1 { @apply text-2xl font-semibold text-primary-800; }
-  h2 { @apply text-lg font-semibold text-primary-800; }
+  /*
+   * Titres de pages (h1) et de blocs (h2) dans un rectangle bleu aux coins
+   * legerement arrondis. Blanc sur blue-700 / blue-600 : contraste AA respecte.
+   * Un texte secondaire dans un titre doit rester clair (ex. text-blue-100).
+   */
+  h1 { @apply inline-block rounded-md bg-blue-700 px-4 py-1.5 text-2xl font-semibold text-white shadow-sm; }
+  h2 { @apply inline-block rounded-md bg-blue-600 px-3 py-1 text-base font-semibold text-white; }
   label { @apply block text-sm font-medium text-gray-700 mb-1; }
 }
 
