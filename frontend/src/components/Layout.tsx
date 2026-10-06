@@ -62,8 +62,9 @@ export function Layout() {
           <div className="mx-auto flex max-w-7xl gap-1 overflow-x-auto px-4">
             {liens.map((l) => (
               <NavLink key={l.to} to={l.to} end={l.to === '/centre' || l.to === '/mairie' || l.to === '/admin'}
-                className={({ isActive }) => `inline-flex items-center gap-1.5 whitespace-nowrap px-3 py-2 text-sm ${isActive ? 'border-b-2 border-white font-medium' : 'text-primary-100 hover:text-white'}`}>
-                <l.icone className="h-4 w-4" aria-hidden />
+                // Texte en gras et plus grand ; l'entree active se distingue par le soulignement blanc
+                className={({ isActive }) => `inline-flex items-center gap-2 whitespace-nowrap px-3 py-2.5 text-base font-bold ${isActive ? 'border-b-[3px] border-white text-white' : 'text-primary-100 hover:text-white'}`}>
+                <l.icone className="h-5 w-5" aria-hidden />
                 {l.label}
               </NavLink>
             ))}
