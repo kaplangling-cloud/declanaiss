@@ -45,7 +45,7 @@ export default function MairieDashboard() {
 
       {resume && (
         <div className="grid gap-5 lg:grid-cols-3">
-          <div className="lg:col-span-2"><BarresMois donnees={resume.parMois} titre="Naissances reçues par mois" /></div>
+          <div className="min-w-0 lg:col-span-2"><BarresMois donnees={resume.parMois} titre="Naissances reçues par mois" /></div>
           {/* Une mairie ne voit jamais les brouillons des centres */}
           <RepartitionStatuts parStatut={ps} statuts={['SOUMISE', 'VERROUILLEE', 'VALIDEE', 'REJETEE']} onChoisir={setStatut} />
         </div>
@@ -65,14 +65,14 @@ export default function MairieDashboard() {
 
         {Object.entries(parCentre).map(([centre, lignes]) => (
           <div key={centre}>
-            <h2 className="mb-2 text-base">{centre} <span className="text-sm font-normal text-blue-100">({lignes.length})</span></h2>
-            <table className="table"><thead><tr><th>N° déclaration</th><th>Enfant</th><th>Né(e) le</th><th>Soumise le</th><th>Statut</th><th>Acte</th><th></th></tr></thead>
+            <h2 className="mb-2">{centre} <span className="text-sm font-normal text-blue-100">({lignes.length})</span></h2>
+            <div className="table-defilante"><table className="table"><thead><tr><th>N° déclaration</th><th>Enfant</th><th>Né(e) le</th><th>Soumise le</th><th>Statut</th><th>Acte</th><th></th></tr></thead>
               <tbody>{lignes.map((d) => (
                 <tr key={d.id}>
                   <td className="font-mono text-xs">{d.numeroDeclaration}</td><td>{d.enfantNom} {d.enfantPrenoms}</td><td>{fmtDate(d.enfantDateNaissance)}</td><td className="text-xs">{fmtDate(d.dateSoumission, true)}</td>
                   <td><StatutBadge statut={d.statut} /></td><td className="font-mono text-xs">{d.acte?.numeroActe ?? '—'}</td>
                   <td className="text-right"><Link className="text-primary-700 underline" to={`/declarations/${d.id}`}>Traiter</Link></td>
-                </tr>))}</tbody></table>
+                </tr>))}</tbody></table></div>
           </div>
         ))}
         {data && data.lignes.length === 0 && <p className="py-6 text-center text-gray-400">Aucune déclaration pour ces critères.</p>}

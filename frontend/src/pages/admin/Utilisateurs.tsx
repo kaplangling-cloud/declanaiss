@@ -128,7 +128,7 @@ export default function Utilisateurs() {
       <div className="flex items-center justify-between"><h1>Comptes utilisateurs</h1><button className="btn-primary" onClick={ouvrirCreation}>+ Nouveau compte</button></div>
       {message && <Alerte type={message.startsWith('Échec') ? 'erreur' : 'succes'}>{message}</Alerte>}
       <div className="card overflow-x-auto">
-        <table className="table"><thead><tr><th>Nom</th><th>E-mail</th><th>Rôle</th><th>Rattachement</th><th>Dernière connexion</th><th>Actif</th><th></th></tr></thead>
+        <div className="table-defilante"><table className="table"><thead><tr><th>Nom</th><th>E-mail</th><th>Rôle</th><th>Rattachement</th><th>Dernière connexion</th><th>Actif</th><th></th></tr></thead>
           <tbody>{(data ?? []).map((u) => (
             <tr key={u.id}>
               <td>{u.prenoms} {u.nom}{u.doitChangerMotDePasse && <div className="text-xs text-amber-700">mot de passe provisoire</div>}</td>
@@ -139,7 +139,7 @@ export default function Utilisateurs() {
                 {/* Le serveur refuse de desactiver son propre compte */}
                 {u.id !== moi?.id && <button className="btn-ghost text-xs" onClick={() => basculer.mutate(u)}>{u.actif ? 'Désactiver' : 'Réactiver'}</button>}
               </td>
-            </tr>))}</tbody></table>
+            </tr>))}</tbody></table></div>
       </div>
 
       {creation && (

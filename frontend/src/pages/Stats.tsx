@@ -56,7 +56,7 @@ export default function Stats() {
           <div className="mt-2 flex gap-4 text-xs text-gray-500"><span><span className="inline-block h-3 w-3 rounded bg-primary-600 align-middle" /> Voie basse</span><span><span className="inline-block h-3 w-3 rounded bg-primary-300 align-middle" /> Césarienne</span></div>
         </div>
         <div className="card"><h2 className="mb-3">Par centre</h2>
-          <table className="table"><thead><tr><th>Centre</th><th>Naissances</th><th>Poids moyen</th></tr></thead><tbody>{(s?.parCentre ?? []).map((c, i) => <tr key={i}><td>{c.centre?.nom ?? '—'}</td><td>{c.total}</td><td>{c.poidsMoyen ? `${c.poidsMoyen} g` : '—'}</td></tr>)}</tbody></table>
+          <div className="table-defilante"><table className="table"><thead><tr><th>Centre</th><th>Naissances</th><th>Poids moyen</th></tr></thead><tbody>{(s?.parCentre ?? []).map((c, i) => <tr key={i}><td>{c.centre?.nom ?? '—'}</td><td>{c.total}</td><td>{c.poidsMoyen ? `${c.poidsMoyen} g` : '—'}</td></tr>)}</tbody></table></div>
           <h2 className="mb-2 mt-4">Répartition</h2>
           <div className="grid grid-cols-2 gap-2 text-sm">{[...(s?.parSexe ?? []), ...(s?.parStatut ?? [])].map((x, i) => <div key={i} className="flex justify-between rounded bg-gray-50 px-2 py-1"><span>{lib[x.cle] ?? x.cle}</span><span className="font-medium">{x.total}</span></div>)}</div>
         </div>

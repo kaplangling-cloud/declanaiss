@@ -14,7 +14,7 @@ export default function Actes() {
     <div className="space-y-4">
       <div className="flex items-center justify-between"><h1>Registre des actes</h1><input type="number" className="input w-28" value={annee} onChange={(e) => setAnnee(Number(e.target.value))} /></div>
       <div className="card">
-        <table className="table"><thead><tr><th>N° acte</th><th>Enfant</th><th>Né(e) le</th><th>Centre</th><th>Dressé le</th><th>Officier</th><th>Impr.</th><th></th></tr></thead>
+        <div className="table-defilante"><table className="table"><thead><tr><th>N° acte</th><th>Enfant</th><th>Né(e) le</th><th>Centre</th><th>Dressé le</th><th>Officier</th><th>Impr.</th><th></th></tr></thead>
           <tbody>{(data ?? []).map((a) => (
             <tr key={a.id}>
               <td className="font-mono text-xs">{a.numeroActe}</td><td>{a.declaration.enfantNom} {a.declaration.enfantPrenoms}</td><td>{fmtDate(a.declaration.enfantDateNaissance)}</td>
@@ -22,7 +22,7 @@ export default function Actes() {
               <td className="space-x-2 text-right"><button className="text-primary-700 underline" onClick={() => ouvrir(a.id)}>PDF</button><Link className="text-primary-700 underline" to={`/declarations/${a.declaration.id}`}>Fiche</Link></td>
             </tr>))}
             {data && data.length === 0 && <tr><td colSpan={8} className="py-6 text-center text-gray-400">Aucun acte pour {annee}</td></tr>}
-          </tbody></table>
+          </tbody></table></div>
       </div>
     </div>
   );

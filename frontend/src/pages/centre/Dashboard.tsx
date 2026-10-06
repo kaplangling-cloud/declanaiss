@@ -59,7 +59,7 @@ export default function CentreDashboard() {
 
       {resume && (
         <div className="grid gap-5 lg:grid-cols-3">
-          <div className="lg:col-span-2"><BarresMois donnees={resume.parMois} titre="Naissances déclarées par mois" /></div>
+          <div className="min-w-0 lg:col-span-2"><BarresMois donnees={resume.parMois} titre="Naissances déclarées par mois" /></div>
           <RepartitionStatuts parStatut={ps} onChoisir={(s) => setOnglet(ongletDe(s))} />
         </div>
       )}
@@ -69,20 +69,20 @@ export default function CentreDashboard() {
       {locaux.length > 0 && onglet === 'encours' && (
         <div className="card">
           <h2 className="mb-3">Sur ce poste (non synchronisées)</h2>
-          <table className="table"><thead><tr><th>Enfant</th><th>Né(e) le</th><th>État local</th><th>Modifié le</th><th></th></tr></thead>
+          <div className="table-defilante"><table className="table"><thead><tr><th>Enfant</th><th>Né(e) le</th><th>État local</th><th>Modifié le</th><th></th></tr></thead>
             <tbody>{locaux.map((b) => (
               <tr key={b.clientUuid}>
                 <td>{b.payload.enfantNom ?? '—'} {b.payload.enfantPrenoms ?? ''}</td><td>{fmtDate(b.payload.enfantDateNaissance)}</td>
                 <td><span className={`badge ${b.statutLocal === 'CONFLIT' || b.statutLocal === 'ERREUR' ? 'bg-amber-50 text-amber-800' : 'bg-gray-100 text-gray-700'}`}>{b.statutLocal.replace('_', ' ').toLowerCase()}</span></td>
                 <td>{fmtDate(b.modifieLe, true)}</td>
                 <td className="text-right"><Link className="text-primary-700 underline" to={b.statutLocal === 'CONFLIT' ? '/centre/synchronisation' : `/centre/brouillons/${b.clientUuid}`}>{b.statutLocal === 'CONFLIT' ? 'Résoudre' : 'Ouvrir'}</Link></td>
-              </tr>))}</tbody></table>
+              </tr>))}</tbody></table></div>
         </div>
       )}
 
       <div className="card">
         <div className="mb-3 flex flex-wrap gap-2">{ONGLETS.map((o) => <button key={o.cle} onClick={() => setOnglet(o.cle)} className={`rounded-full px-3 py-1 text-sm ${onglet === o.cle ? 'bg-primary-600 text-white' : 'bg-gray-100 text-gray-600'}`}>{o.label}</button>)}</div>
-        <table className="table"><thead><tr><th>N° déclaration</th><th>Enfant</th><th>Né(e) le</th><th>Statut</th><th>Modifiable jusqu'au</th><th>Mis à jour</th><th></th></tr></thead>
+        <div className="table-defilante"><table className="table"><thead><tr><th>N° déclaration</th><th>Enfant</th><th>Né(e) le</th><th>Statut</th><th>Modifiable jusqu'au</th><th>Mis à jour</th><th></th></tr></thead>
           <tbody>
             {(data ?? []).map((d) => (
               <tr key={d.id}>
@@ -92,7 +92,7 @@ export default function CentreDashboard() {
                 <td className="text-right"><Link className="text-primary-700 underline" to={`/declarations/${d.id}`}>Fiche</Link></td>
               </tr>))}
             {data && data.length === 0 && <tr><td colSpan={7} className="py-6 text-center text-gray-400">Aucune déclaration</td></tr>}
-          </tbody></table>
+          </tbody></table></div>
       </div>
     </div>
   );

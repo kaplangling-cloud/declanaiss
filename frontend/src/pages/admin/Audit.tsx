@@ -24,7 +24,7 @@ export default function Audit() {
         <span className="self-center text-sm text-gray-500">{data?.total ?? 0} entrée(s)</span>
       </div>
       <div className="card overflow-x-auto">
-        <table className="table"><thead><tr><th>#</th><th>Date</th><th>Acteur</th><th>Action</th><th>Entité</th><th>IP</th><th></th></tr></thead>
+        <div className="table-defilante"><table className="table"><thead><tr><th>#</th><th>Date</th><th>Acteur</th><th>Action</th><th>Entité</th><th>IP</th><th></th></tr></thead>
           <tbody>{(data?.lignes ?? []).map((l) => (
             <Fragment key={l.id}>
               <tr>
@@ -41,7 +41,7 @@ export default function Audit() {
                   </div>
                 </td></tr>
               )}
-            </Fragment>))}</tbody></table>
+            </Fragment>))}</tbody></table></div>
         <div className="mt-3 flex justify-end gap-2">
           <button className="btn-secondary" disabled={f.page <= 1} onClick={() => setF((s) => ({ ...s, page: s.page - 1 }))}>← Précédent</button>
           <button className="btn-secondary" disabled={!data || data.page * data.taille >= data.total} onClick={() => setF((s) => ({ ...s, page: s.page + 1 }))}>Suivant →</button>

@@ -31,20 +31,20 @@ export default function AdminDashboard() {
       </div>
       {resume && (
         <div className="grid gap-5 lg:grid-cols-3">
-          <div className="lg:col-span-2"><BarresMois donnees={resume.parMois} titre="Naissances déclarées par mois (national)" /></div>
+          <div className="min-w-0 lg:col-span-2"><BarresMois donnees={resume.parMois} titre="Naissances déclarées par mois (national)" /></div>
           <RepartitionStatuts parStatut={resume.parStatut} />
         </div>
       )}
       <div className="grid gap-5 lg:grid-cols-2">
         <div className="card">
           <div className="mb-2 flex items-center justify-between"><h2>Centres de santé</h2><Link to="/admin/centres" className="text-sm text-primary-700 underline">Gérer</Link></div>
-          <table className="table"><thead><tr><th>Centre</th><th>Mairie</th><th>Personnel</th><th>Déclarations</th><th>Actif</th></tr></thead>
-            <tbody>{(centres ?? []).map((c) => <tr key={c.id}><td>{c.nom}</td><td className="text-xs">{c.mairie.nom}</td><td>{c._count.personnels}</td><td>{c._count.declarations}</td><td>{c.actif ? 'Oui' : 'Non'}</td></tr>)}</tbody></table>
+          <div className="table-defilante"><table className="table"><thead><tr><th>Centre</th><th>Mairie</th><th>Personnel</th><th>Déclarations</th><th>Actif</th></tr></thead>
+            <tbody>{(centres ?? []).map((c) => <tr key={c.id}><td>{c.nom}</td><td className="text-xs">{c.mairie.nom}</td><td>{c._count.personnels}</td><td>{c._count.declarations}</td><td>{c.actif ? 'Oui' : 'Non'}</td></tr>)}</tbody></table></div>
         </div>
         <div className="card">
           <div className="mb-2 flex items-center justify-between"><h2>Naissances par centre</h2><Link to="/stats" className="text-sm text-primary-700 underline">Statistiques détaillées</Link></div>
-          <table className="table"><thead><tr><th>Centre</th><th>Total</th><th>Poids moyen</th></tr></thead>
-            <tbody>{(s?.parCentre ?? []).map((c, i) => <tr key={i}><td>{c.centre?.nom ?? '—'}</td><td>{c.total}</td><td>{c.poidsMoyen ? `${c.poidsMoyen} g` : '—'}</td></tr>)}</tbody></table>
+          <div className="table-defilante"><table className="table"><thead><tr><th>Centre</th><th>Total</th><th>Poids moyen</th></tr></thead>
+            <tbody>{(s?.parCentre ?? []).map((c, i) => <tr key={i}><td>{c.centre?.nom ?? '—'}</td><td>{c.total}</td><td>{c.poidsMoyen ? `${c.poidsMoyen} g` : '—'}</td></tr>)}</tbody></table></div>
         </div>
       </div>
     </div>

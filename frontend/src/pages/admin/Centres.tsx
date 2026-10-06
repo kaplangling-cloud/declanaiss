@@ -126,18 +126,18 @@ export default function Centres() {
       <div className="flex items-center justify-between"><h1>Centres de santé & mairies</h1><div className="flex gap-2"><button className="btn-secondary" onClick={() => ouvrir('mairie')}>+ Mairie</button><button className="btn-primary" onClick={() => ouvrir('centre')}>+ Centre de santé</button></div></div>
 
       <div className="card"><h2 className="mb-2">Centres de santé</h2>
-        <table className="table"><thead><tr><th>Code</th><th>Centre</th><th>Autorisation</th><th>Chef</th><th>Mairie</th><th>Décl.</th><th>Actif</th><th></th></tr></thead>
+        <div className="table-defilante"><table className="table"><thead><tr><th>Code</th><th>Centre</th><th>Autorisation</th><th>Chef</th><th>Mairie</th><th>Décl.</th><th>Actif</th><th></th></tr></thead>
           <tbody>{(centres ?? []).map((c) => (
             <tr key={c.id}><td className="font-mono text-xs">{c.code}</td><td>{c.nom}<div className="text-xs text-gray-400">{c.adresse}</div></td>
               <td className="text-xs">{c.numeroAutorisation}<div className="text-gray-400">{fmtDate(c.autorisationDateDelivrance)} → {fmtDate(c.autorisationDateFinValidite)}</div></td>
               <td className="text-xs">{c.chefNom}<div className="text-gray-400">{c.chefFonction} · {c.chefContact}</div></td><td className="text-xs">{c.mairie.nom}</td><td>{c._count.declarations}</td><td>{c.actif ? 'Oui' : 'Non'}</td>
-              <td className="whitespace-nowrap text-right"><button className="btn-ghost text-xs" onClick={() => ouvrirEdition(c)}>Modifier</button><button className="btn-ghost text-xs" onClick={() => basculer.mutate({ chemin: `/centres/${c.id}`, actif: !c.actif })}>{c.actif ? 'Désactiver' : 'Réactiver'}</button></td></tr>))}</tbody></table>
+              <td className="whitespace-nowrap text-right"><button className="btn-ghost text-xs" onClick={() => ouvrirEdition(c)}>Modifier</button><button className="btn-ghost text-xs" onClick={() => basculer.mutate({ chemin: `/centres/${c.id}`, actif: !c.actif })}>{c.actif ? 'Désactiver' : 'Réactiver'}</button></td></tr>))}</tbody></table></div>
       </div>
       <div className="card"><h2 className="mb-2">Mairies (centres d'état civil)</h2>
-        <table className="table"><thead><tr><th>Code</th><th>Mairie</th><th>Localisation</th><th>Centres</th><th>Décl.</th><th>Actes</th><th>Actif</th><th></th></tr></thead>
+        <div className="table-defilante"><table className="table"><thead><tr><th>Code</th><th>Mairie</th><th>Localisation</th><th>Centres</th><th>Décl.</th><th>Actes</th><th>Actif</th><th></th></tr></thead>
           <tbody>{(mairies ?? []).map((m) => (
             <tr key={m.id}><td className="font-mono text-xs">{m.code}</td><td>{m.nom}</td><td className="text-xs">{m.arrondissement.nom}, {m.region.nom}</td><td>{m._count.centres}</td><td>{m._count.declarations}</td><td>{m._count.actes}</td><td>{m.actif ? 'Oui' : 'Non'}</td>
-              <td className="whitespace-nowrap text-right"><button className="btn-ghost text-xs" onClick={() => ouvrirEditionMairie(m)}>Modifier</button><button className="btn-ghost text-xs" onClick={() => basculer.mutate({ chemin: `/mairies/${m.id}`, actif: !m.actif })}>{m.actif ? 'Désactiver' : 'Réactiver'}</button></td></tr>))}</tbody></table>
+              <td className="whitespace-nowrap text-right"><button className="btn-ghost text-xs" onClick={() => ouvrirEditionMairie(m)}>Modifier</button><button className="btn-ghost text-xs" onClick={() => basculer.mutate({ chemin: `/mairies/${m.id}`, actif: !m.actif })}>{m.actif ? 'Désactiver' : 'Réactiver'}</button></td></tr>))}</tbody></table></div>
       </div>
 
       {modale === 'mairie' && (

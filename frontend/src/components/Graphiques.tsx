@@ -17,7 +17,7 @@ export function BarresMois({ donnees, titre = 'Naissances par mois' }: { donnees
   const resume = `${titre} : ${donnees.map((d) => `${libelleMois(d.mois)} ${d.mois.slice(0, 4)} ${d.total}`).join(', ')}`;
   return (
     <div className="card">
-      <div className="mb-3 flex items-baseline justify-between">
+      <div className="mb-3 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
         <h2>{titre}</h2>
         <span className="text-sm text-gray-500"><span className="font-semibold text-primary-800 tabular-nums">{total}</span> sur 12 mois</span>
       </div>
@@ -25,7 +25,7 @@ export function BarresMois({ donnees, titre = 'Naissances par mois' }: { donnees
         {donnees.map((d, i) => {
           const courant = i === donnees.length - 1;
           return (
-            <div key={d.mois} className="flex h-full flex-1 flex-col items-center justify-end gap-1" title={`${libelleMois(d.mois)} ${d.mois.slice(0, 4)} : ${d.total} naissance(s)`}>
+            <div key={d.mois} className="flex h-full min-w-0 flex-1 flex-col items-center justify-end gap-1" title={`${libelleMois(d.mois)} ${d.mois.slice(0, 4)} : ${d.total} naissance(s)`}>
               <span className="text-xs font-medium text-primary-800 tabular-nums">{d.total || ''}</span>
               <div
                 className={`w-full rounded-t ${courant ? 'bg-primary-600' : 'bg-primary-300'}`}
@@ -36,7 +36,13 @@ export function BarresMois({ donnees, titre = 'Naissances par mois' }: { donnees
         })}
       </div>
       <div className="mt-1 flex gap-1.5 border-t border-gray-100 pt-1" aria-hidden>
-        {donnees.map((d) => <span key={d.mois} className="flex-1 text-center text-[11px] text-gray-500">{libelleMois(d.mois)}</span>)}
+        {/* Sur mobile, les 12 libelles ne tiennent pas cote a cote : initiale du mois (J F M A...) */}
+        {donnees.map((d) => (
+          <span key={d.mois} className="min-w-0 flex-1 text-center text-[11px] text-gray-500">
+            <span className="sm:hidden">{libelleMois(d.mois).charAt(0).toUpperCase()}</span>
+            <span className="hidden sm:inline">{libelleMois(d.mois)}</span>
+          </span>
+        ))}
       </div>
     </div>
   );
@@ -61,7 +67,7 @@ export function RepartitionStatuts({ parStatut, statuts = ORDRE, onChoisir }: {
   const resume = `Répartition par statut : ${lignes.map((l) => `${LIBELLE_STATUT[l.statut]} ${l.total}`).join(', ')}`;
   return (
     <div className="card">
-      <div className="mb-3 flex items-baseline justify-between">
+      <div className="mb-3 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
         <h2>Répartition des dossiers</h2>
         <span className="text-sm text-gray-500"><span className="font-semibold text-primary-800 tabular-nums">{total}</span> au total</span>
       </div>

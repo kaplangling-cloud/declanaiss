@@ -34,14 +34,14 @@ export default function Personnel() {
     <div className="space-y-4">
       <div className="flex items-center justify-between"><h1>Personnel habilité à déclarer</h1>{aRole('CHEF_CENTRE') && <button className="btn-primary" onClick={() => setOuvert(true)}>+ Ajouter</button>}</div>
       <div className="card">
-        <table className="table"><thead><tr><th>Nom</th><th>Fonction</th><th>N° d'ordre</th><th>Compte</th><th>Habilité</th><th></th></tr></thead>
+        <div className="table-defilante"><table className="table"><thead><tr><th>Nom</th><th>Fonction</th><th>N° d'ordre</th><th>Compte</th><th>Habilité</th><th></th></tr></thead>
           <tbody>{(data ?? []).map((p) => (
             <tr key={p.id}>
               <td>{p.prenoms} {p.nom}</td><td>{p.fonction}</td><td className="font-mono text-xs">{p.numeroOrdre ?? '—'}</td>
               <td className="text-xs">{p.user ? `${p.user.email}${p.user.actif ? '' : ' (inactif)'}` : '—'}</td>
               <td><span className={`badge ${p.habilite ? 'bg-primary-100 text-primary-800' : 'bg-gray-100 text-gray-500'}`}>{p.habilite ? 'Oui' : 'Non'}</span></td>
               <td className="text-right">{aRole('CHEF_CENTRE') && <button className="btn-ghost text-xs" onClick={() => basculer.mutate(p)}>{p.habilite ? 'Retirer' : 'Rétablir'}</button>}</td>
-            </tr>))}</tbody></table>
+            </tr>))}</tbody></table></div>
       </div>
       {ouvert && (
         <Modale titre="Ajouter un personnel" onFermer={() => setOuvert(false)}>

@@ -40,30 +40,31 @@ export function Layout() {
     <div className="min-h-screen bg-white">
       <header className="bg-primary-700 text-white">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-white p-1"><img src="/logo.png" alt="Logo" className="h-full w-full object-contain" /></div>
+          <div className="flex min-w-0 items-center gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white p-1"><img src="/logo.png" alt="Logo" className="h-full w-full object-contain" /></div>
             <div>
               <div className="font-titre text-sm font-bold uppercase leading-tight tracking-wide">Déclaration de naissance en ligne</div>
               <div className="text-xs text-primary-100">{rattachement}</div>
             </div>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex shrink-0 items-center gap-2 sm:gap-4">
             {(utilisateur.role === 'PERSONNEL_SANTE' || utilisateur.role === 'CHEF_CENTRE') && <SyncIndicator />}
             <div className="hidden text-right text-xs sm:block">
               <div className="font-medium">{utilisateur.nomComplet}</div>
               <div className="text-primary-100">{LIBELLE_ROLE[utilisateur.role]}</div>
             </div>
-            <button className="inline-flex items-center gap-1.5 rounded-lg bg-primary-800 px-3 py-1.5 text-xs hover:bg-primary-900" onClick={() => deconnecter().then(() => navigate('/connexion'))}>
-              <LogOut className="h-3.5 w-3.5" aria-hidden /> Déconnexion
+            {/* Sur mobile, l'icone seule ; le libelle reste lu par les lecteurs d'ecran */}
+            <button className="inline-flex items-center gap-1.5 rounded-lg bg-primary-800 px-2.5 py-1.5 text-xs hover:bg-primary-900 sm:px-3" title="Déconnexion" onClick={() => deconnecter().then(() => navigate('/connexion'))}>
+              <LogOut className="h-4 w-4 sm:h-3.5 sm:w-3.5" aria-hidden /> <span className="sr-only sm:not-sr-only">Déconnexion</span>
             </button>
           </div>
         </div>
-        <nav className="border-t border-primary-600 bg-primary-600">
-          <div className="mx-auto flex max-w-7xl gap-1 overflow-x-auto px-4">
+        <nav className="menu-barre">
+          <div className="menu-liste mx-auto flex max-w-7xl overflow-x-auto px-4 py-2">
             {liens.map((l) => (
               <NavLink key={l.to} to={l.to} end={l.to === '/centre' || l.to === '/mairie' || l.to === '/admin'}
-                // Texte en gras et plus grand ; l'entree active se distingue par le soulignement blanc
-                className={({ isActive }) => `inline-flex items-center gap-2 whitespace-nowrap px-3 py-2.5 font-titre text-base font-bold ${isActive ? 'border-b-[3px] border-white text-white' : 'text-primary-100 hover:text-white'}`}>
+                // Couleurs et espacements : variables --menu-* et classes .menu-* (index.css)
+                className={({ isActive }) => `menu-lien inline-flex shrink-0 items-center gap-2 whitespace-nowrap font-titre text-base font-bold ${isActive ? 'menu-lien-actif' : ''}`}>
                 <l.icone className="h-5 w-5" aria-hidden />
                 {l.label}
               </NavLink>

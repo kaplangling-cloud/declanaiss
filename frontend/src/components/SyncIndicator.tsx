@@ -21,9 +21,10 @@ export function SyncIndicator() {
 
   const total = compte.aSynchroniser + compte.conflits + compte.erreurs;
   return (
-    <Link to="/centre/synchronisation" className="flex items-center gap-2 rounded-lg bg-primary-800 px-3 py-1.5 text-xs hover:bg-primary-900" title="File de synchronisation">
+    <Link to="/centre/synchronisation" className="flex items-center gap-2 rounded-lg bg-primary-800 px-2.5 py-1.5 text-xs hover:bg-primary-900 sm:px-3" title="File de synchronisation">
       <span className={`h-2 w-2 rounded-full ${enLigne ? 'bg-green-300' : 'bg-amber-400'}`} />
-      <span>{enLigne ? (enCours ? 'Synchronisation…' : 'En ligne') : 'Hors ligne'}</span>
+      {/* Sur mobile, la pastille seule ; l'etat reste lu par les lecteurs d'ecran */}
+      <span className="sr-only sm:not-sr-only">{enLigne ? (enCours ? 'Synchronisation…' : 'En ligne') : 'Hors ligne'}</span>
       {total > 0 && (
         <span className={`rounded-full px-1.5 ${compte.conflits || compte.erreurs ? 'bg-amber-400 text-primary-900' : 'bg-white text-primary-800'}`}>{total}</span>
       )}
