@@ -36,8 +36,10 @@ export class StatsService {
 
   async synthese(f: FiltresStatsDto, acteur: UtilisateurCourant) {
     const where = this.perimetre(f, acteur);
-    const [total, parStatut, parMode, parTerme, parSexe, parCentre, parPeriode] = await Promise.all([
+    const [total, poids, parStatut, parMode, parTerme, parSexe, parCentre, parPeriode] = await Promise.all([
       this.prisma.declaration.count({ where }),
+      // Poids moyen sur l'ensemble filtre : la moyenne des moyennes par centre serait faussee
+      this.prisma.declaration.aggregate({ where, _avg: { poidsNaissanceGrammes: true } }),
       this.prisma.declaration.groupBy({ by: ['statut'], where, _count: { _all: true } }),
       this.prisma.declaration.groupBy({ by: ['modeAccouchement'], where, _count: { _all: true } }),
       this.prisma.declaration.groupBy({ by: ['termeGrossesse'], where, _count: { _all: true } }),
@@ -49,6 +51,7 @@ export class StatsService {
     const nomCentre = new Map(centres.map((c) => [c.id, c]));
     return {
       total,
+      poidsMoyen: poids._avg.poidsNaissanceGrammes ? Math.round(poids._avg.poidsNaissanceGrammes) : null,
       parStatut: this.aplatir(parStatut, 'statut'),
       parModeAccouchement: this.aplatir(parMode, 'modeAccouchement'),
       parTerme: this.aplatir(parTerme, 'termeGrossesse'),

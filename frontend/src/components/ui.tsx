@@ -48,7 +48,7 @@ export function Tuile({ titre, valeur, sous, accent, icone: Icone, onClick, acti
       )}
       <div className="min-w-0">
         <div className="text-xs font-medium uppercase tracking-wide text-gray-500">{titre}</div>
-        <div className="mt-1 text-3xl font-semibold text-primary-800 tabular-nums">{valeur}</div>
+        <div className="mt-1 text-3xl font-semibold text-primary-800">{valeur}</div>
         {sous && <div className="mt-1 text-xs text-gray-500">{sous}</div>}
       </div>
     </div>

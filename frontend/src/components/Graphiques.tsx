@@ -1,4 +1,5 @@
 import type { Statut } from '../types';
+import { COULEUR_STATUT, ORDRE_STATUTS } from './rapport/palette';
 import { LIBELLE_STATUT } from './ui';
 
 /**
@@ -48,11 +49,8 @@ export function BarresMois({ donnees, titre = 'Naissances par mois' }: { donnees
   );
 }
 
-/** Couleurs des statuts, reprises des badges (cf. StatutBadge). */
-const COULEUR_BARRE: Record<Statut, string> = {
-  BROUILLON: 'bg-gray-300', SOUMISE: 'bg-blue-400', VERROUILLEE: 'bg-amber-400', VALIDEE: 'bg-primary-600', REJETEE: 'bg-red-400',
-};
-const ORDRE: Statut[] = ['BROUILLON', 'SOUMISE', 'VERROUILLEE', 'VALIDEE', 'REJETEE'];
+/** Couleurs et ordre des statuts : jeu valide pour les daltonismes, commun a tous les graphiques (rapport/palette.ts). */
+const ORDRE: Statut[] = ORDRE_STATUTS;
 
 /**
  * Repartition des dossiers par statut : barre empilee et legende chiffree. Un clic
@@ -73,14 +71,14 @@ export function RepartitionStatuts({ parStatut, statuts = ORDRE, onChoisir }: {
       </div>
       <div className="flex h-4 overflow-hidden rounded-full bg-gray-100" role="img" aria-label={resume}>
         {lignes.filter((l) => l.total).map((l) => (
-          <div key={l.statut} className={COULEUR_BARRE[l.statut]} style={{ width: `${(l.total / total) * 100}%` }} title={`${LIBELLE_STATUT[l.statut]} : ${l.total}`} />
+          <div key={l.statut} style={{ width: `${(l.total / total) * 100}%`, backgroundColor: COULEUR_STATUT[l.statut] }} title={`${LIBELLE_STATUT[l.statut]} : ${l.total}`} />
         ))}
       </div>
       <ul className="mt-4 space-y-1.5 text-sm">
         {lignes.map((l) => {
           const contenu = (
             <>
-              <span className={`h-3 w-3 shrink-0 rounded-sm ${COULEUR_BARRE[l.statut]}`} />
+              <span className="h-3 w-3 shrink-0 rounded-sm" style={{ backgroundColor: COULEUR_STATUT[l.statut] }} />
               <span className="flex-1 text-left">{LIBELLE_STATUT[l.statut]}</span>
               <span className="font-medium tabular-nums">{l.total}</span>
               <span className="w-10 text-right text-xs text-gray-500 tabular-nums">{pct(l.total)} %</span>
