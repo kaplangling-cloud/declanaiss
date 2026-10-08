@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { LIBELLE_ROLE, useAuth } from '../lib/auth';
 import { SyncIndicator } from './SyncIndicator';
+import { DrapeauCameroun } from './DrapeauCameroun';
 
 const NAV: Record<string, { to: string; label: string; icone: LucideIcon }[]> = {
   PERSONNEL_SANTE: [
@@ -114,6 +115,8 @@ export function Layout() {
               aria-label="Ouvrir le menu" aria-expanded={menuOuvert} aria-controls="menu-principal">
               <Menu className="h-6 w-6" aria-hidden />
             </button>
+            {/* Drapeau national, a gauche du titre ; liseré blanc pour detacher la bande verte du fond vert */}
+            <DrapeauCameroun className="h-7 w-auto shrink-0 rounded-sm ring-1 ring-white/80 sm:h-8" />
             <div className="min-w-0">
               {/* +4 points par rapport a l'origine : 9 pt -> 13 pt (mobile), 10,5 pt -> 14,5 pt (640 px et plus) */}
               <div className="font-titre text-[13pt] font-bold leading-tight tracking-wide sm:text-[14.5pt]">SYSTÈME NATIONAL DE DIGITALISATION DES ACTES DE NAISSANCE</div>
