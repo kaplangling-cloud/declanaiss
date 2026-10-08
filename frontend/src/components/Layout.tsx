@@ -68,7 +68,8 @@ export function Layout() {
 
   if (!utilisateur) return null;
   const liens = NAV[utilisateur.role] ?? [];
-  const rattachement = utilisateur.centre?.nom ?? utilisateur.mairie?.nom ?? 'National';
+  // Centre ou mairie de l'utilisateur ; rien pour l'echelon national, deja nomme par le titre
+  const rattachement = utilisateur.centre?.nom ?? utilisateur.mairie?.nom ?? null;
 
   return (
     <div className="min-h-screen bg-white">
@@ -114,8 +115,8 @@ export function Layout() {
               <Menu className="h-6 w-6" aria-hidden />
             </button>
             <div className="min-w-0">
-              <div className="font-titre text-sm font-bold uppercase leading-tight tracking-wide md:hidden">Déclaration de naissance en ligne</div>
-              <div className="truncate text-xs text-primary-100 md:text-sm md:font-medium md:text-white">{rattachement}</div>
+              <div className="font-titre text-xs font-bold leading-tight tracking-wide sm:text-sm">SYSTÈME NATIONAL DE DIGITALISATION DES ACTES DE NAISSANCE</div>
+              {rattachement && <div className="truncate text-xs text-primary-100">{rattachement}</div>}
             </div>
           </div>
           <div className="flex shrink-0 items-center gap-2 sm:gap-4">
