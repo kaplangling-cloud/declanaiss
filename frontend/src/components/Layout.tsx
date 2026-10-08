@@ -115,7 +115,8 @@ export function Layout() {
               <Menu className="h-6 w-6" aria-hidden />
             </button>
             <div className="min-w-0">
-              <div className="font-titre text-xs font-bold leading-tight tracking-wide sm:text-sm">SYSTÈME NATIONAL DE DIGITALISATION DES ACTES DE NAISSANCE</div>
+              {/* +4 points par rapport a l'origine : 9 pt -> 13 pt (mobile), 10,5 pt -> 14,5 pt (640 px et plus) */}
+              <div className="font-titre text-[13pt] font-bold leading-tight tracking-wide sm:text-[14.5pt]">SYSTÈME NATIONAL DE DIGITALISATION DES ACTES DE NAISSANCE</div>
               {rattachement && <div className="truncate text-xs text-primary-100">{rattachement}</div>}
             </div>
           </div>
