@@ -56,7 +56,9 @@ export default function Stats() {
   // Pendant un rechargement, le rapport garde l'affichage precedent (attenue), sans saut de mise en page
   const { data: s, isFetching, isPlaceholderData } = useQuery({ queryKey: ['stats', f], queryFn: () => api<Synthese>(`/stats?${qs}`), placeholderData: keepPreviousData });
   const voitCentres = !aRole('CHEF_CENTRE');
-  const { data: centres } = useQuery({ queryKey: ['centres'], queryFn: () => api<{ id: string; nom: string; mairie?: { nom: string } }[]>('/centres'), enabled: voitCentres });
+  const { data: tousCentres } = useQuery({ queryKey: ['centres'], queryFn: () => api<{ id: string; nom: string; mairieId: string }[]>('/centres'), enabled: voitCentres });
+  // Une mairie choisie restreint la liste des centres : un centre d'une autre mairie donnait un rapport vide
+  const centres = tousCentres && (f.mairieId ? tousCentres.filter((c) => c.mairieId === f.mairieId) : tousCentres);
   const { data: mairies } = useQuery({ queryKey: ['mairies'], queryFn: () => api<{ id: string; nom: string }[]>('/mairies'), enabled: aRole('ADMIN_NATIONAL') });
 
   const choisirPreselection = (p: Exclude<Preselection, 'perso'>) => { setPreselection(p); setPeriodeChoisie(null); setF((x) => ({ ...x, ...bornes(p) })); };

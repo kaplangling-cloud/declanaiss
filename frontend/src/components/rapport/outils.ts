@@ -13,12 +13,16 @@ export function useLargeur<T extends HTMLElement>() {
   return { ref, largeur };
 }
 
-/** Graduations « rondes » de 0 au maximum (0, 5, 10... / 0, 20, 40...). */
+/**
+ * Graduations « rondes » de 0 au maximum (0, 5, 10... / 0, 20, 40...). Les valeurs
+ * sont des comptages : le pas ne descend jamais sous 1, sans quoi un maximum de 1 ou 2
+ * donnait des graduations en double (0, 1, 1, 2, 2) une fois arrondies.
+ */
 export function graduations(max: number, nombre = 4): number[] {
   if (max <= 0) return [0, 1];
   const brut = max / nombre;
   const puissance = 10 ** Math.floor(Math.log10(brut));
-  const pas = [1, 2, 5, 10].map((m) => m * puissance).find((p) => p >= brut) ?? brut;
+  const pas = Math.max(1, [1, 2, 5, 10].map((m) => m * puissance).find((p) => p >= brut) ?? brut);
   const fin = Math.ceil(max / pas) * pas;
   const t: number[] = [];
   for (let v = 0; v <= fin + pas / 2; v += pas) t.push(Math.round(v));

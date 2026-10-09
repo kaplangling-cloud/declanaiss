@@ -22,16 +22,23 @@ export function BarresMois({ donnees, titre = 'Naissances par mois' }: { donnees
         <h2>{titre}</h2>
         <span className="text-sm text-gray-500"><span className="font-semibold text-primary-800 tabular-nums">{total}</span> sur 12 mois</span>
       </div>
-      <div className="flex h-40 items-end gap-1.5" role="img" aria-label={resume}>
+      <div className="flex h-40 gap-1.5" role="img" aria-label={resume}>
         {donnees.map((d, i) => {
           const courant = i === donnees.length - 1;
           return (
-            <div key={d.mois} className="flex h-full min-w-0 flex-1 flex-col items-center justify-end gap-1" title={`${libelleMois(d.mois)} ${d.mois.slice(0, 4)} : ${d.total} naissance(s)`}>
-              <span className="text-xs font-medium text-primary-800 tabular-nums">{d.total || ''}</span>
-              <div
-                className={`w-full rounded-t ${courant ? 'bg-primary-600' : 'bg-primary-300'}`}
-                style={{ height: `${(d.total / max) * 100}%`, minHeight: d.total ? 4 : 1 }}
-              />
+            // Zone de trace reservee sous une bande de 1,25 rem pour l'etiquette : la hauteur de
+            // la barre est un pourcentage de cette seule zone. Calculee sur toute la colonne,
+            // l'etiquette ecrasait les barres proches du maximum (10 et 11 paraissaient egales).
+            <div key={d.mois} className="relative h-full min-w-0 flex-1 pt-5" title={`${libelleMois(d.mois)} ${d.mois.slice(0, 4)} : ${d.total} naissance(s)`}>
+              <div className="relative h-full w-full">
+                <div
+                  className={`absolute bottom-0 w-full rounded-t ${courant ? 'bg-primary-600' : 'bg-primary-300'}`}
+                  style={{ height: `${(d.total / max) * 100}%`, minHeight: d.total ? 4 : 1 }}
+                />
+                {d.total > 0 && (
+                  <span className="absolute left-0 right-0 text-center text-xs font-medium text-primary-800 tabular-nums" style={{ bottom: `calc(${(d.total / max) * 100}% + 2px)` }}>{d.total}</span>
+                )}
+              </div>
             </div>
           );
         })}
