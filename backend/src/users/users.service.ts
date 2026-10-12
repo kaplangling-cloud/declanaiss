@@ -148,6 +148,10 @@ export class UsersService {
     if (acteur.role !== Role.ADMIN_NATIONAL && (changeStructure || changeEmail || changeNomUtilisateur)) {
       throw new ForbiddenException("Seul l'administrateur national modifie le role, le rattachement ou les identifiants de connexion");
     }
+    // Le nom d'utilisateur est un identifiant de connexion : on peut le changer, pas le retirer
+    if ((dto.nomUtilisateur as unknown) === null) {
+      throw new BadRequestException("Le nom d'utilisateur est obligatoire : il sert d'identifiant de connexion");
+    }
     if (dto.personnelSanteId !== undefined) {
       throw new BadRequestException('La liaison a une fiche de personnel se fait a la creation du compte');
     }

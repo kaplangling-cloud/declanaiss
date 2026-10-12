@@ -2,7 +2,7 @@
  * Cree un compte d'administrateur national (super-administrateur) : il cree et
  * modifie tous les comptes, centres et mairies.
  *
- *   ADMIN_EMAIL=... [ADMIN_USERNAME=...] [ADMIN_NOM=...] [ADMIN_PRENOMS=...] [ADMIN_PASSWORD=...] npm run admin:creer
+ *   ADMIN_EMAIL=... ADMIN_USERNAME=... [ADMIN_NOM=...] [ADMIN_PRENOMS=...] [ADMIN_PASSWORD=...] npm run admin:creer
  *   (image de production : node dist/prisma/creer-admin.js)
  *
  * Sans ADMIN_PASSWORD, un mot de passe aleatoire est genere et affiche une seule
@@ -28,8 +28,10 @@ async function main() {
   }
   // Genere conforme a la politique : un tirage base64 pouvait n'avoir ni chiffre ni caractere special
   const motDePasse = fourni ?? motDePasseAleatoire();
-  const nomUtilisateur = process.env.ADMIN_USERNAME?.trim().toLowerCase() || null;
-  if (nomUtilisateur && !FORMAT_NOM_UTILISATEUR.test(nomUtilisateur)) throw new Error(MESSAGE_FORMAT_NOM_UTILISATEUR);
+  // Nom d'utilisateur obligatoire, comme dans l'interface : il sert de login avec l'e-mail
+  const nomUtilisateur = process.env.ADMIN_USERNAME?.trim().toLowerCase();
+  if (!nomUtilisateur) throw new Error("ADMIN_USERNAME (nom d'utilisateur de connexion) doit etre defini");
+  if (!FORMAT_NOM_UTILISATEUR.test(nomUtilisateur)) throw new Error(MESSAGE_FORMAT_NOM_UTILISATEUR);
   const nom = process.env.ADMIN_NOM?.trim() || 'ADMINISTRATEUR';
   const prenoms = process.env.ADMIN_PRENOMS?.trim() || 'Super';
 
@@ -40,7 +42,7 @@ async function main() {
     if (await prisma.user.findUnique({ where: { email }, select: { id: true } })) {
       throw new Error(`Un compte ${email} existe deja : le modifier depuis l'interface (Comptes)`);
     }
-    if (nomUtilisateur && (await prisma.user.findUnique({ where: { nomUtilisateur }, select: { id: true } }))) {
+    if (await prisma.user.findUnique({ where: { nomUtilisateur }, select: { id: true } })) {
       throw new Error(`Le nom d'utilisateur ${nomUtilisateur} est deja pris`);
     }
     const hash = await argon2.hash(motDePasse);
@@ -57,7 +59,7 @@ async function main() {
       return user;
     });
 
-    console.log(`Compte cree : ${cree.email}${cree.nomUtilisateur ? ` / ${cree.nomUtilisateur}` : ''} (${cree.role})`);
+    console.log(`Compte cree : ${cree.nomUtilisateur} / ${cree.email} (${cree.role})`);
     if (fourni === undefined) {
       console.log(`Mot de passe provisoire (affiche une seule fois) : ${motDePasse}`);
     }

@@ -9,10 +9,13 @@ import { FONCTIONS_PERSONNEL, FonctionPersonnel } from '../../common/referentiel
 
 export class CreerUtilisateurDto {
   @ApiProperty() @IsEmail() email!: string;
-  /** Identifiant de connexion alternatif ; null le retire (modification). */
-  @ApiPropertyOptional({ example: 'r.ngo', description: MESSAGE_FORMAT_NOM_UTILISATEUR })
-  @IsOptional() @Transform(({ value }) => normaliserNomUtilisateur(value))
-  @IsString() @Matches(FORMAT_NOM_UTILISATEUR, { message: MESSAGE_FORMAT_NOM_UTILISATEUR }) nomUtilisateur?: string | null;
+  /**
+   * Identifiant de connexion, obligatoire a la creation : l'utilisateur se connecte
+   * avec son nom d'utilisateur ou son adresse e-mail.
+   */
+  @ApiProperty({ example: 'r.ngo', description: MESSAGE_FORMAT_NOM_UTILISATEUR })
+  @Transform(({ value }) => normaliserNomUtilisateur(value))
+  @IsString() @Matches(FORMAT_NOM_UTILISATEUR, { message: MESSAGE_FORMAT_NOM_UTILISATEUR }) nomUtilisateur!: string;
   @ApiProperty({ minLength: 8, description: MESSAGE_MOT_DE_PASSE }) @IsString() @EstMotDePasseRobuste() motDePasse!: string;
   @ApiProperty() @IsString() nom!: string;
   @ApiProperty() @IsString() prenoms!: string;

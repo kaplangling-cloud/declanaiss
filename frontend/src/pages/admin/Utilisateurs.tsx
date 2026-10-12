@@ -15,7 +15,20 @@ interface U {
 const ROLES_CENTRE: Role[] = ['PERSONNEL_SANTE', 'CHEF_CENTRE'];
 /** Miroir de backend/src/users/nom-utilisateur.ts (le serveur met en minuscules avant de verifier). */
 const MOTIF_NOM_UTILISATEUR = '[A-Za-z0-9][A-Za-z0-9._\\-]{2,29}';
-const AIDE_NOM_UTILISATEUR = "3 à 30 caractères : lettres sans accent, chiffres, point, tiret, tiret bas. Permet de se connecter sans l'adresse e-mail.";
+const AIDE_NOM_UTILISATEUR = "Identifiants de connexion : le nom d'utilisateur ou l'adresse e-mail, au choix. Nom d'utilisateur : 3 à 30 caractères (lettres sans accent, chiffres, point, tiret, tiret bas).";
+
+/**
+ * Proposition de nom d'utilisateur : initiale du premier prenom, point, nom
+ * (« Rose », « NGO » -> r.ngo), sans accent ni caractere hors du format accepte.
+ */
+function proposerNomUtilisateur(prenoms: string, nom: string): string {
+  const simplifier = (t: string) => t.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim()
+    .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+  const initiale = simplifier(prenoms).charAt(0);
+  const famille = simplifier(nom);
+  if (!famille) return '';
+  return (initiale ? `${initiale}.${famille}` : famille).slice(0, 30);
+}
 const ROLES_MAIRIE: Role[] = ['OFFICIER_ETAT_CIVIL', 'SECRETAIRE_MAIRIE'];
 
 /** Comptes utilisateurs : creation, modification et desactivation (administrateur national). */
@@ -27,6 +40,10 @@ export default function Utilisateurs() {
   const [role, setRole] = useState<Role>('PERSONNEL_SANTE');
   const [erreur, setErreur] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  // Creation : nom d'utilisateur propose a partir du prenom et du nom, tant qu'il n'est pas saisi a la main
+  const [identite, setIdentite] = useState({ nom: '', prenoms: '' });
+  const [nomUtilisateurSaisi, setNomUtilisateurSaisi] = useState<string | null>(null);
+  const nomUtilisateurCreation = nomUtilisateurSaisi ?? proposerNomUtilisateur(identite.prenoms, identite.nom);
   const { data } = useQuery({ queryKey: ['utilisateurs'], queryFn: () => api<U[]>('/utilisateurs') });
   const { data: centres } = useQuery({ queryKey: ['centres'], queryFn: () => api<{ id: string; nom: string }[]>('/centres') });
   const { data: mairies } = useQuery({ queryKey: ['mairies'], queryFn: () => api<{ id: string; nom: string }[]>('/mairies') });
@@ -52,7 +69,11 @@ export default function Utilisateurs() {
     onError: (e) => setMessage(`Échec : ${(e as Error).message}`),
   });
 
-  const ouvrirCreation = () => { setRole('PERSONNEL_SANTE'); setErreur(null); setMessage(null); setCreation(true); };
+  const ouvrirCreation = () => {
+    setRole('PERSONNEL_SANTE'); setErreur(null); setMessage(null);
+    setIdentite({ nom: '', prenoms: '' }); setNomUtilisateurSaisi(null);
+    setCreation(true);
+  };
   const ouvrirEdition = (u: U) => { setRole(u.role); setErreur(null); setMessage(null); setEdite(u); };
 
   const soumettreCreation = (e: FormEvent<HTMLFormElement>) => {
@@ -73,7 +94,7 @@ export default function Utilisateurs() {
     for (const k of ['nom', 'prenoms', 'email'] as const) if (texte(k) && texte(k) !== edite[k]) body[k] = texte(k);
     if (texte('telephone') !== (edite.telephone ?? '')) body.telephone = texte('telephone');
     const nomUtilisateur = texte('nomUtilisateur').toLowerCase();
-    if (nomUtilisateur !== (edite.nomUtilisateur ?? '')) body.nomUtilisateur = nomUtilisateur || null;
+    if (nomUtilisateur && nomUtilisateur !== (edite.nomUtilisateur ?? '')) body.nomUtilisateur = nomUtilisateur;
     if (role !== edite.role) body.role = role;
     // Le rattachement suit le role : un compte de centre n'a pas de mairie, et inversement
     const centreId = ROLES_CENTRE.includes(role) ? texte('centreId') || null : null;
@@ -145,12 +166,17 @@ export default function Utilisateurs() {
       {creation && (
         <Modale titre="Nouveau compte" onFermer={fermer}>
           <form onSubmit={soumettreCreation} className="space-y-3">{erreur && <Alerte type="erreur">{erreur}</Alerte>}
-            <div className="grid grid-cols-2 gap-3"><div><label>Nom</label><input name="nom" className="input" required /></div><div><label>Prénom(s)</label><input name="prenoms" className="input" required /></div></div>
             <div className="grid grid-cols-2 gap-3">
-              <div><label>E-mail</label><input name="email" type="email" className="input" required /></div>
-              <div><label>Nom d'utilisateur (facultatif)</label><input name="nomUtilisateur" className="input" pattern={MOTIF_NOM_UTILISATEUR} autoCapitalize="none" spellCheck={false} /></div>
+              <div><label>Nom</label><input name="nom" className="input" required value={identite.nom} onChange={(e) => setIdentite({ ...identite, nom: e.target.value })} /></div>
+              <div><label>Prénom(s)</label><input name="prenoms" className="input" required value={identite.prenoms} onChange={(e) => setIdentite({ ...identite, prenoms: e.target.value })} /></div>
             </div>
-            <p className="-mt-1 text-xs text-gray-500">{AIDE_NOM_UTILISATEUR}</p>
+            {/* Les deux identifiants de connexion, obligatoires */}
+            <div className="grid grid-cols-2 gap-3">
+              <div><label>Nom d'utilisateur (login)</label><input name="nomUtilisateur" className="input font-mono" required pattern={MOTIF_NOM_UTILISATEUR} autoCapitalize="none" spellCheck={false} autoComplete="off"
+                value={nomUtilisateurCreation} onChange={(e) => setNomUtilisateurSaisi(e.target.value)} /></div>
+              <div><label>E-mail (login)</label><input name="email" type="email" className="input" required /></div>
+            </div>
+            <p className="-mt-1 text-xs text-gray-500">{AIDE_NOM_UTILISATEUR} Le nom d'utilisateur est proposé à partir du prénom et du nom ; il reste modifiable.</p>
             <div><label>Mot de passe initial (à changer à la 1ʳᵉ connexion)</label><input name="motDePasse" type="password" className="input" required autoComplete="new-password" />
               <p className="mt-1 text-xs text-gray-500">{AIDE_MOT_DE_PASSE}</p></div>
             {selecteurRole()}
@@ -166,10 +192,10 @@ export default function Utilisateurs() {
           <form onSubmit={soumettreEdition} className="space-y-3">{erreur && <Alerte type="erreur">{erreur}</Alerte>}
             <div className="grid grid-cols-2 gap-3"><div><label>Nom</label><input name="nom" className="input" defaultValue={edite.nom} required /></div><div><label>Prénom(s)</label><input name="prenoms" className="input" defaultValue={edite.prenoms} required /></div></div>
             <div className="grid grid-cols-2 gap-3">
-              <div><label>E-mail (connexion)</label><input name="email" type="email" className="input" defaultValue={edite.email} required /></div>
-              <div><label>Nom d'utilisateur</label><input name="nomUtilisateur" className="input" pattern={MOTIF_NOM_UTILISATEUR} autoCapitalize="none" spellCheck={false} defaultValue={edite.nomUtilisateur ?? ''} placeholder="aucun" /></div>
+              <div><label>E-mail (login)</label><input name="email" type="email" className="input" defaultValue={edite.email} required /></div>
+              <div><label>Nom d'utilisateur (login)</label><input name="nomUtilisateur" className="input font-mono" required pattern={MOTIF_NOM_UTILISATEUR} autoCapitalize="none" spellCheck={false} autoComplete="off" defaultValue={edite.nomUtilisateur ?? ''} /></div>
             </div>
-            <p className="-mt-1 text-xs text-gray-500">{AIDE_NOM_UTILISATEUR} Vider le champ retire le nom d'utilisateur.</p>
+            <p className="-mt-1 text-xs text-gray-500">{AIDE_NOM_UTILISATEUR}{!edite.nomUtilisateur && ' Ce compte n\'en a pas encore : choisissez-en un pour enregistrer.'}</p>
             <div><label>Téléphone</label><input name="telephone" className="input" defaultValue={edite.telephone ?? ''} /></div>
             {selecteurRole()}
             {selecteurRattachement({ centreId: edite.centreId, mairieId: edite.mairieId })}

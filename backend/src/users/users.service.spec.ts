@@ -4,6 +4,9 @@ import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { ContexteRequete, UtilisateurCourant } from '../common/decorators';
 import { UsersService } from './users.service';
+import { plainToInstance } from 'class-transformer';
+import { validate } from 'class-validator';
+import { CreerUtilisateurDto } from './dto/user.dto';
 
 type CompteFactice = {
   id: string; email: string; role: Role; centreId: string | null; mairieId: string | null; actif: boolean; nomUtilisateur?: string | null;
@@ -155,10 +158,9 @@ describe("UsersService.modifier - nom d'utilisateur", () => {
     await expect(service.modifier('u-sf', { nomUtilisateur: 'r.ngo' }, chef, ctx)).rejects.toBeInstanceOf(ForbiddenException);
   });
 
-  it("retire le nom d'utilisateur sur null", async () => {
-    const { service, appels } = monter([{ ...sageFemme, nomUtilisateur: 'r.ngo' }]);
-    await service.modifier('u-sf', { nomUtilisateur: null }, admin, ctx);
-    expect(appels.mises[0]).toMatchObject({ nomUtilisateur: null });
+  it("refuse de retirer le nom d'utilisateur, identifiant de connexion", async () => {
+    const { service } = monter([{ ...sageFemme, nomUtilisateur: 'r.ngo' }]);
+    await expect(service.modifier('u-sf', { nomUtilisateur: null as unknown as string }, admin, ctx)).rejects.toBeInstanceOf(BadRequestException);
   });
 });
 
@@ -181,13 +183,14 @@ describe('UsersService.modifier - dernier administrateur', () => {
 });
 
 describe('UsersService.creer - fonction du personnel de sante', () => {
-  const base = { email: 'n@exemple.cm', motDePasse: 'MotDePasseLong2026', nom: 'NGO', prenoms: 'Rose' };
+  const base = { email: 'n@exemple.cm', nomUtilisateur: 'r.ngo', motDePasse: 'MotDePasseLong2026', nom: 'NGO', prenoms: 'Rose' };
 
   /** Base en memoire etendue a la creation d'un compte et de sa fiche. */
   const monterCreation = () => {
     const fiches: Array<Record<string, unknown>> = [];
     const prisma = {
       user: {
+        findUnique: async () => null,   // nom d'utilisateur libre
         create: async ({ data }: { data: Record<string, unknown> }) => ({ id: 'u-nouveau', ...data }),
         findUniqueOrThrow: async () => ({ id: 'u-nouveau', personnelSante: fiches[0] ?? null }),
       },
@@ -223,10 +226,25 @@ describe('UsersService.creer - rattachement', () => {
     const { service } = monter([]);
     await expect(
       service.creer(
-        { email: 'x@exemple.cm', motDePasse: 'MotDePasseLong2026', nom: 'X', prenoms: 'Y', role: Role.PERSONNEL_SANTE, centreId: 'c-1', mairieId: 'm-1' },
+        { email: 'x@exemple.cm', nomUtilisateur: 'x.y', motDePasse: 'MotDePasseLong2026', nom: 'X', prenoms: 'Y', role: Role.PERSONNEL_SANTE, centreId: 'c-1', mairieId: 'm-1' },
         admin,
         ctx,
       ),
     ).rejects.toBeInstanceOf(BadRequestException);
+  });
+});
+
+describe('CreerUtilisateurDto - identifiants de connexion', () => {
+  const base = { email: 'rose@exemple.cm', motDePasse: 'Ebolowa1!', nom: 'NGO', prenoms: 'Rose', role: Role.PERSONNEL_SANTE, centreId: '5f0c6c2e-4d6a-4c7e-9a1b-2b3c4d5e6f70', fonction: 'Sage-femme' };
+  const champsEnErreur = async (corps: object) => (await validate(plainToInstance(CreerUtilisateurDto, corps))).map((e) => e.property);
+
+  it("exige le nom d'utilisateur en plus de l'e-mail", async () => {
+    expect(await champsEnErreur(base)).toContain('nomUtilisateur');
+  });
+
+  it("accepte un nom d'utilisateur valide, mis en minuscules", async () => {
+    const dto = plainToInstance(CreerUtilisateurDto, { ...base, nomUtilisateur: ' R.Ngo ' });
+    expect(await validate(dto)).toHaveLength(0);
+    expect(dto.nomUtilisateur).toBe('r.ngo');
   });
 });
