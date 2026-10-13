@@ -1,0 +1,132 @@
+# =====================================================================
+#  Deploiement Render (Blueprint) depuis GitHub — base de donnees Supabase
+#  Guide complet : docs/deploiement-supabase-render.md
+#
+#  - declanaiss-api : API NestJS (image Docker backend/Dockerfile), disque
+#    persistant pour les pieces jointes et les PDF d'actes (offre payante :
+#    sur l'offre gratuite, le disque est efface a chaque deploiement).
+#  - declanaiss-web : interface (PWA) en site statique ; /api est relaye
+#    vers l'API, la page reste donc sur une seule origine (CSP « 'self' »).
+#
+#  Chaque push sur main redeploie les deux services. Les migrations Prisma
+#  sont appliquees au demarrage de l'API (CMD du Dockerfile).
+# =====================================================================
+services:
+  - type: web
+    name: declanaiss-api
+    runtime: docker
+    plan: starter
+    region: frankfurt            # region la plus proche du Cameroun ; aligner Supabase (eu-central-1)
+    branch: main
+    autoDeploy: true
+    dockerContext: ./backend
+    dockerfilePath: ./backend/Dockerfile
+    healthCheckPath: /api/sante
+    disk:
+      name: stockage
+      mountPath: /var/lib/declanaiss/storage
+      sizeGB: 5
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: TZ
+        value: Africa/Douala
+      - key: PORT                # port sur lequel Render achemine le trafic
+        value: "3000"
+      - key: API_PORT
+        value: "3000"
+      - key: API_PREFIX
+        value: api
+      - key: STORAGE_ROOT
+        value: /var/lib/declanaiss/storage
+      # Base Supabase : a renseigner dans le tableau de bord Render (jamais dans le depot)
+      - key: DATABASE_URL
+        sync: false
+      - key: DIRECT_URL
+        sync: false
+      # Adresse publique de l'interface : elle est imprimee dans les QR codes des actes.
+      # A remplacer par le domaine definitif AVANT de dresser le premier acte.
+      - key: APP_PUBLIC_URL
+        value: https://declanaiss-web.onrender.com
+      - key: CORS_ORIGINS
+        value: https://declanaiss-web.onrender.com
+      # Client -> site statique (relais) -> frontal Render -> API : 2 relais de confiance.
+      # A verifier apres le premier deploiement (cf. guide, etape « Verifier l'adresse IP »).
+      - key: TRUST_PROXY_HOPS
+        value: "2"
+      # Secrets generes une fois par Render (valeur aleatoire 256 bits en base64).
+      # DATA_ENCRYPTION_KEY et BLIND_INDEX_KEY : les SAUVEGARDER hors de Render ;
+      # leur perte rend les CNI et les pieces jointes definitivement illisibles.
+      - key: JWT_ACCESS_SECRET
+        generateValue: true
+      - key: JWT_REFRESH_SECRET
+        generateValue: true
+      - key: DATA_ENCRYPTION_KEY
+        generateValue: true
+      - key: BLIND_INDEX_KEY
+        generateValue: true
+      - key: JWT_ACCESS_TTL
+        value: 15m
+      - key: JWT_REFRESH_TTL
+        value: 7d
+      - key: MODIFICATION_WINDOW_DAYS
+        value: "7"
+      - key: LOCK_CRON
+        value: "0 * * * *"
+      - key: MAX_UPLOAD_SIZE_MB
+        value: "8"
+
+  - type: web
+    name: declanaiss-web
+    runtime: static
+    branch: main
+    autoDeploy: true
+    buildCommand: cd frontend && npm ci && npm run build
+    staticPublishPath: ./frontend/dist
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: VITE_API_URL
+        value: /api
+      - key: VITE_APP_NAME
+        value: Declaration de Naissance
+    routes:
+      # Relais de l'API (meme origine pour le navigateur). Adapter l'adresse si Render
+      # attribue a l'API un sous-domaine different de declanaiss-api.onrender.com.
+      - type: rewrite
+        source: /api/*
+        destination: https://declanaiss-api.onrender.com/api/*
+      # Application monopage : toute autre adresse sert index.html
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    headers:
+      # Memes en-tetes de securite que nginx/nginx.prod.conf
+      - path: /*
+        name: Strict-Transport-Security
+        value: max-age=63072000; includeSubDomains
+      - path: /*
+        name: X-Content-Type-Options
+        value: nosniff
+      - path: /*
+        name: X-Frame-Options
+        value: DENY
+      - path: /*
+        name: Referrer-Policy
+        value: strict-origin-when-cross-origin
+      - path: /*
+        name: Permissions-Policy
+        value: camera=(self), geolocation=()
+      - path: /*
+        name: Content-Security-Policy
+        value: "default-src 'self'; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self'; frame-src blob:; object-src 'none'; base-uri 'self'; frame-ancestors 'none'"
+      # Le service worker doit toujours etre revalide (mises a jour de la PWA)
+      - path: /sw.js
+        name: Cache-Control
+        value: no-cache
+      - path: /registerSW.js
+        name: Cache-Control
+        value: no-cache
+      - path: /manifest.webmanifest
+        name: Cache-Control
+        value: no-cache

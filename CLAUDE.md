@@ -52,6 +52,18 @@ Le conteneur `app` applique `prisma migrate deploy` à chaque démarrage (voir s
 
 PostgreSQL est publié sur **5433** et non 5432 (ce port est occupé par un autre conteneur sur la machine de développement). `.env` et `backend/.env` ne sont pas versionnés ; les recréer depuis `.env.example`. En production, `configuration.ts` refuse de démarrer si un secret manque ou porte encore sa valeur d'exemple.
 
+Prisma lit deux adresses : `DATABASE_URL` (requêtes) et `DIRECT_URL` (migrations). En local, elles sont identiques.
+
+## Déploiement hébergé (Supabase + Render)
+
+Guide : `docs/deploiement-supabase-render.md`. La base est sur Supabase, via le *Session pooler* (IPv4, `sslmode=require`). Ne jamais utiliser le pooler en mode *transaction* (port 6543) : il casse les verrous consultatifs de la numérotation et de l'audit.
+
+Render construit l'API (Docker, disque persistant pour `STORAGE_ROOT`) et l'interface (site statique qui relaie `/api`) d'après `render.yaml`, à chaque push sur `main`.
+
+Les adresses Supabase vivent dans `.env.supabase`, non versionné ; `scripts/preparer-supabase.sh` y applique les migrations, l'import du découpage et la création de l'administrateur.
+
+`TRUST_PROXY_HOPS` vaut 2 sur Render : client → site statique → frontal → API.
+
 ## Architecture
 
 Trois services : SPA React servie par Nginx, qui relaie `/api` vers l'API NestJS, elle-même adossée à PostgreSQL via Prisma.
