@@ -17,7 +17,8 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
-      secretOrKey: config.get<string>('jwt.accessSecret'),
+      // getOrThrow : sans secret, l'API refuse de demarrer plutot que de verifier des jetons avec une cle vide
+      secretOrKey: config.getOrThrow<string>('jwt.accessSecret'),
     });
   }
 

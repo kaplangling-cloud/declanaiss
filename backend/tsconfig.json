@@ -1,6 +1,7 @@
 {
   "compilerOptions": {
-    "module": "commonjs",
+    "module": "node20",
+    "moduleResolution": "node16",
     "declaration": false,
     "removeComments": true,
     "emitDecoratorMetadata": true,
@@ -10,7 +11,6 @@
     "target": "ES2022",
     "sourceMap": true,
     "outDir": "./dist",
-    "baseUrl": "./",
     "incremental": true,
     "skipLibCheck": true,
     "strictNullChecks": true,
@@ -18,11 +18,7 @@
     "forceConsistentCasingInFileNames": true,
     "noFallthroughCasesInSwitch": true,
     "resolveJsonModule": true,
-    "paths": {
-      "@/*": [
-        "src/*"
-      ]
-    }
+    "types": ["node", "jest"]
   },
   "exclude": [
     "node_modules",

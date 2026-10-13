@@ -30,7 +30,7 @@ npm run build                      # nest build + compilation du seed (tsconfig.
 npm run lint
 npx tsc --noEmit -p tsconfig.json  # vérification de types seule
 npm test                           # jest : tests unitaires *.spec.ts (hors image de production, cf. tsconfig.build.json)
-npx jest chemin/du.spec.ts         # un seul fichier de test
+npm test -- chemin/du.spec.ts      # un seul fichier de test (pas `npx jest` : voir ci-dessous)
 npm run prisma:migrate             # créer + appliquer une migration (dev)
 npm run prisma:deploy              # appliquer les migrations (prod)
 SEED_PASSWORD='...' npm run seed   # jeu de démonstration ; mot de passe conforme à la politique (cf. Conventions)
@@ -39,6 +39,8 @@ ADMIN_EMAIL='...' ADMIN_USERNAME='...' npm run admin:creer  # créer un administ
 ```
 
 En conteneur, les scripts compilés s'exécutent depuis `/app` : `docker compose exec -e ADMIN_EMAIL=... app node dist/prisma/creer-admin.js`. Le dernier administrateur national actif ne peut être ni désactivé ni rétrogradé.
+
+Pile backend : NestJS 12 (Express 5), TypeScript 6, Jest 30, Node 24 dans l'image (la CLI NestJS 12 exige Node ≥ 22.22.3). Les paquets NestJS 12 sont en ESM, le projet reste en CommonJS : `tsconfig.json` est en `module: node20` (chargement d'ESM par `require`), et `npm test` lance Jest avec `--experimental-vm-modules`, sans quoi Jest refuse ces paquets (`Must use import to load ES Module`). ts-jest compile les tests fichier par fichier (`isolatedModules`) ; la vérification complète des types reste `npx tsc --noEmit`. TypeScript 6 exige `types` et `rootDir` explicites (déjà réglés).
 
 Frontend (`cd frontend`) : `npm run dev` (:5173, proxy `/api` → :3000), `npm run build`, `npm run lint`.
 

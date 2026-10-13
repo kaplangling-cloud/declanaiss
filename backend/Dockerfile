@@ -1,5 +1,6 @@
 # ---------- Build ----------
-FROM node:20-bookworm-slim AS build
+# Node 24 (LTS) : la CLI NestJS 12 exige Node >= 22.22.3 ; l execution d une app v12, >= 20.19
+FROM node:24-bookworm-slim AS build
 WORKDIR /app
 RUN apt-get update && apt-get install -y --no-install-recommends openssl python3 make g++ && rm -rf /var/lib/apt/lists/*
 COPY package*.json ./
@@ -9,7 +10,7 @@ COPY . .
 RUN npx prisma generate && npm run build && npx tsc -p tsconfig.seed.json && npm prune --omit=dev
 
 # ---------- Runtime ----------
-FROM node:20-bookworm-slim
+FROM node:24-bookworm-slim
 WORKDIR /app
 ENV NODE_ENV=production TZ=Africa/Douala
 RUN apt-get update && apt-get install -y --no-install-recommends openssl tini && rm -rf /var/lib/apt/lists/* \
