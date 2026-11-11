@@ -29,6 +29,27 @@ Le build est lui aussi différent : l'hébergeur ne construit qu'un seul projet.
 `build:heberge` du backend construit donc aussi l'interface et la dépose dans
 `backend/public`, que `FRONTEND_DIST` désigne ensuite.
 
+### Les fichiers statiques ne passent pas par l'API
+
+Point vérifié en production, et contre-intuitif : à la publication, Hostinger synchronise
+le build dans `public_html`, et **LiteSpeed sert lui-même tout fichier qui existe là**.
+Seules les requêtes sans fichier correspondant atteignent l'application Node.
+
+Autrement dit, `/` et les routes de navigation sont servies par l'API — avec sa CSP et
+ses règles de cache — mais `/assets/…`, `sw.js` et `manifest.webmanifest` sont servis par
+LiteSpeed, avec ses propres types MIME et aucun en-tête de cache. Observé tel quel :
+
+| Fichier | Sans `.htaccess` | Conséquence |
+| --- | --- | --- |
+| `manifest.webmanifest` | `text/plain` | **La PWA ne s'installe pas** : le navigateur refuse un manifeste qui n'est pas du JSON — la saisie hors ligne tombe |
+| `assets/*.js` | `application/x-javascript`, sans cache | Les fichiers empreintés perdent leur cache d'un an |
+
+D'où `frontend/public/.htaccess`, que Vite recopie à la racine du build : il rétablit les
+types MIME et les règles de cache. Il suit l'interface jusqu'à `public_html` à chaque
+déploiement, et Nginx l'ignore sous Docker. **Après toute modification de la mise en page
+du build, vérifier le type renvoyé pour le manifeste** — c'est le symptôme le plus
+silencieux de cette architecture.
+
 ## Préalables
 
 1. **Un domaine.** Le plan inclut un domaine gratuit (hPanel → Domaines), à réclamer puis

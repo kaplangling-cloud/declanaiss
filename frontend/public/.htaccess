@@ -1,0 +1,34 @@
+# Types MIME et regles de cache pour les hebergements ou un serveur frontal
+# (LiteSpeed, Apache) sert les fichiers statiques depuis public_html sans passer
+# par l'API : les en-tetes poses dans backend/src/main.ts ne s'y appliquent pas.
+#
+# Sans ce fichier, LiteSpeed sert manifest.webmanifest en text/plain, et le
+# navigateur refuse alors d'installer la PWA : la saisie hors ligne, qui est au
+# coeur du projet, devient impossible. Les fichiers empreintes par le build
+# perdent par ailleurs leur cache d'un an.
+#
+# Vite copie le contenu de `public/` tel quel a la racine du build : ce fichier
+# suit donc l'interface jusqu'a public_html a chaque deploiement.
+# Sous Docker, Nginx ignore les .htaccess et porte ces regles lui-meme.
+
+<IfModule mod_mime.c>
+  AddType application/manifest+json .webmanifest
+  AddType text/javascript           .js
+  AddType application/json          .json
+  AddType font/woff2                .woff2
+</IfModule>
+
+<IfModule mod_headers.c>
+  # Fichiers portant l'empreinte du build (index-bGHUz5B7.js) : leur nom change
+  # a chaque modification, ils sont donc immuables.
+  <FilesMatch "-[A-Za-z0-9_-]{8}\.(js|css|woff2)$">
+    Header set Cache-Control "public, max-age=31536000, immutable"
+  </FilesMatch>
+
+  # Service worker, son script d'enregistrement, le manifeste et l'index ne
+  # portent pas d'empreinte : les mettre en cache figerait un poste sur une
+  # version perimee de l'application.
+  <FilesMatch "^(sw\.js|registerSW\.js|manifest\.webmanifest|index\.html)$">
+    Header set Cache-Control "no-cache"
+  </FilesMatch>
+</IfModule>

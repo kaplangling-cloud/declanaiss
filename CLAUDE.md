@@ -71,6 +71,8 @@ Guide : `docs/deploiement-hostinger.md`. L'hébergement web Hostinger ne propose
 
 L'hébergeur ne construit qu'un seul projet : `npm run build:heberge` (backend) construit aussi l'interface via `backend/scripts/construire-interface.mjs` et la dépose dans `backend/public` (non versionné). `backend/.npmrc` force `include=dev`, sans quoi un `npm install` sous `NODE_ENV=production` omettrait la CLI NestJS, TypeScript et Prisma.
 
+Attention : à la publication, Hostinger synchronise le build dans `public_html` et **LiteSpeed sert lui-même tout fichier qui y existe**, sans passer par l'API — seules les requêtes sans fichier correspondant atteignent Node. Les routes de navigation portent donc bien les en-têtes de `main.ts`, mais `/assets/…`, `sw.js` et le manifeste non. `frontend/public/.htaccess` (recopié à la racine du build par Vite, ignoré par Nginx) rétablit leurs types MIME et leurs règles de cache ; sans lui le manifeste part en `text/plain` et **la PWA ne s'installe plus**.
+
 Rien n'applique les migrations au démarrage ici (contrairement au conteneur) : lancer `prisma migrate deploy` après chaque migration. `STORAGE_ROOT` doit rester hors du dossier déployé, qu'un déploiement écrase. `TRUST_PROXY_HOPS` est à vérifier sur la plateforme : mal réglé, l'audit enregistre l'IP du frontal et la limitation de débit devient un compteur unique pour tous les postes.
 
 ## Architecture
