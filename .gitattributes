@@ -1,0 +1,12 @@
+# Fins de ligne — scripts et fichiers executes dans des conteneurs Linux.
+#
+# Sur un poste Windows, `core.autocrlf = true` convertit les fichiers texte en
+# CRLF a l'extraction. Un retour chariot casse alors ce qui est interprete sous
+# Linux : « sleep 2\r » devient « invalid time interval », un shebang devient
+# « bad interpreter: /bin/sh^M », et une instruction RUN d'un Dockerfile echoue.
+# Ces fichiers sont donc toujours extraits en LF, quel que soit le reglage du
+# poste qui clone le depot.
+*.sh text eol=lf
+Dockerfile text eol=lf
+*.Dockerfile text eol=lf
+docker-entrypoint.sh text eol=lf

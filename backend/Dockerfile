@@ -20,8 +20,11 @@ COPY --from=build --chown=app:app /app/node_modules ./node_modules
 COPY --from=build --chown=app:app /app/dist ./dist
 COPY --from=build --chown=app:app /app/prisma ./prisma
 COPY --from=build --chown=app:app /app/package.json ./
+COPY --chown=app:app docker-entrypoint.sh ./
 USER app
 EXPOSE 3000
 ENTRYPOINT ["/usr/bin/tini", "--"]
-# Applique les migrations (jamais de reset) puis demarre l'API
-CMD ["sh", "-c", "npx prisma migrate deploy && node dist/main.js"]
+# Migrations (jamais de reset, avec nouvelles tentatives si la base demarre
+# encore) puis demarrage de l'API. Lance par `sh` : le bit d'execution du
+# fichier n'est pas garanti selon le systeme de fichiers d'ou il est copie.
+CMD ["sh", "docker-entrypoint.sh"]

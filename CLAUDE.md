@@ -46,7 +46,7 @@ Frontend (`cd frontend`) : `npm run dev` (:5173, proxy `/api` → :3000), `npm r
 
 `start-dev.ps1` à la racine lance Postgres, les migrations, l'API et le frontend en une fois.
 
-Le conteneur `app` applique `prisma migrate deploy` à chaque démarrage (voir son `CMD`) : une migration commitée part en production automatiquement.
+Le conteneur `app` applique `prisma migrate deploy` à chaque démarrage (`backend/docker-entrypoint.sh`) : une migration commitée part en production automatiquement. Le script réessaie avec une attente progressive — la base refuse les connexions quelques secondes après avoir été déclarée disponible (`FATAL: the database system is starting up`) — puis abandonne au bout d'environ quatre minutes, pour qu'une adresse de base erronée échoue visiblement (`MIGRATION_TENTATIVES`, `MIGRATION_ATTENTE_S`, `MIGRATION_ATTENTE_MAX_S`).
 
 ## Environnement local
 
