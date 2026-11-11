@@ -10,3 +10,6 @@
 Dockerfile text eol=lf
 *.Dockerfile text eol=lf
 docker-entrypoint.sh text eol=lf
+# Lu par Apache/LiteSpeed sur l'hebergement mutualise
+.htaccess text eol=lf
+.npmrc text eol=lf
