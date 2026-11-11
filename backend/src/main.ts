@@ -150,7 +150,10 @@ async function bootstrap() {
     SwaggerModule.setup(`${prefix}/docs`, app, SwaggerModule.createDocument(app, config));
   }
 
-  const port = Number(process.env.API_PORT || 3000);
+  // PORT est impose par la plupart des hebergeurs (Hostinger, Render) : l'ignorer
+  // ferait ecouter l'API ailleurs que la ou le frontal la cherche. API_PORT reste
+  // prioritaire pour le developpement et le compose, qui le fixent explicitement.
+  const port = Number(process.env.API_PORT || process.env.PORT || 3000);
   await app.listen(port, '0.0.0.0');
   new Logger('Bootstrap').log(`API demarree sur le port ${port} (prefixe /${prefix})`);
 }

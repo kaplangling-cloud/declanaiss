@@ -23,7 +23,8 @@ export default () => ({
   appName: process.env.APP_NAME || 'Declaration de Naissance',
   publicUrl: process.env.APP_PUBLIC_URL || 'http://localhost:8080',
   api: {
-    port: Number(process.env.API_PORT || 3000),
+    // PORT : impose par les hebergeurs (cf. main.ts)
+    port: Number(process.env.API_PORT || process.env.PORT || 3000),
     prefix: process.env.API_PREFIX || 'api',
   },
   jwt: {
