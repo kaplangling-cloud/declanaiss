@@ -6,6 +6,7 @@
   "private": true,
   "scripts": {
     "build": "nest build && tsc -p tsconfig.seed.json",
+    "build:heberge": "prisma generate && npm run build && node scripts/construire-interface.mjs",
     "start": "nest start",
     "start:dev": "nest start --watch",
     "start:prod": "node dist/main.js",
@@ -88,6 +89,7 @@
         }
       ]
     },
-    "testEnvironment": "node"
+    "testEnvironment": "node",
+    "testTimeout": 30000
   }
 }

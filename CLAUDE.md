@@ -30,6 +30,7 @@ npm run build                      # nest build + compilation du seed (tsconfig.
 npm run lint
 npx tsc --noEmit -p tsconfig.json  # vérification de types seule
 npm test                           # jest : tests unitaires *.spec.ts (hors image de production, cf. tsconfig.build.json)
+                                   # délai porté à 30 s (`testTimeout`) : argon2 est volontairement coûteux et dépasse les 5 s par défaut sur une machine chargée
 npm test -- chemin/du.spec.ts      # un seul fichier de test (pas `npx jest` : voir ci-dessous)
 npm run prisma:migrate             # créer + appliquer une migration (dev)
 npm run prisma:deploy              # appliquer les migrations (prod)
@@ -63,6 +64,14 @@ Render construit l'API (Docker, disque persistant pour `STORAGE_ROOT`) et l'inte
 Les adresses Supabase vivent dans `.env.supabase`, non versionné ; `scripts/preparer-supabase.sh` y applique les migrations, l'import du découpage et la création de l'administrateur.
 
 `TRUST_PROXY_HOPS` vaut 2 sur Render : client → site statique → frontal → API.
+
+## Déploiement hébergé (Hostinger + Supabase)
+
+Guide : `docs/deploiement-hostinger.md`. L'hébergement web Hostinger ne propose **que MySQL** : la base reste sur Supabase. Il n'y a ni Docker ni Nginx, donc **l'API est le seul serveur HTTP et sert aussi l'interface** — `FRONTEND_DIST` désigne le build de la SPA et `main.ts` reprend alors le repli SPA, les règles de cache et les en-têtes que Nginx posait (CSP, HSTS, `Referrer-Policy: no-referrer`, `Permissions-Policy`). Laisser `FRONTEND_DIST` vide sous Docker : Nginx garde ce rôle.
+
+L'hébergeur ne construit qu'un seul projet : `npm run build:heberge` (backend) construit aussi l'interface via `backend/scripts/construire-interface.mjs` et la dépose dans `backend/public` (non versionné). `backend/.npmrc` force `include=dev`, sans quoi un `npm install` sous `NODE_ENV=production` omettrait la CLI NestJS, TypeScript et Prisma.
+
+Rien n'applique les migrations au démarrage ici (contrairement au conteneur) : lancer `prisma migrate deploy` après chaque migration. `STORAGE_ROOT` doit rester hors du dossier déployé, qu'un déploiement écrase. `TRUST_PROXY_HOPS` est à vérifier sur la plateforme : mal réglé, l'audit enregistre l'IP du frontal et la limitation de débit devient un compteur unique pour tous les postes.
 
 ## Architecture
 

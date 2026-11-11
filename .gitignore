@@ -8,6 +8,8 @@
 node_modules/
 dist/
 backend/storage/
+# Interface construite puis deposee la par scripts/construire-interface.mjs
+backend/public/
 frontend/dev-dist/
 
 # Divers
