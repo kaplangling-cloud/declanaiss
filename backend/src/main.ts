@@ -3,7 +3,7 @@ import { NestExpressApplication } from '@nestjs/platform-express';
 import { ValidationPipe, Logger } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import helmet from 'helmet';
-import { extname, join, resolve } from 'node:path';
+import { extname, isAbsolute, join, resolve } from 'node:path';
 import type { Request, Response, NextFunction } from 'express';
 import { AppModule } from './app.module';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
@@ -90,7 +90,13 @@ async function bootstrap() {
   // Nginx garde ce role : rien ne change.
   const frontendDist = process.env.FRONTEND_DIST;
   if (frontendDist) {
-    const racine = resolve(frontendDist);
+    // Un chemin relatif est resolu depuis la racine de l'application (le dossier
+    // qui contient `dist/`), jamais depuis le repertoire courant : un hebergeur
+    // peut demarrer le processus depuis n'importe ou, et l'interface serait alors
+    // introuvable — toutes les pages renverraient 404.
+    const racine = isAbsolute(frontendDist)
+      ? frontendDist
+      : resolve(__dirname, '..', frontendDist);
 
     app.use((_req: Request, res: Response, next: NextFunction) => {
       res.setHeader('Permissions-Policy', 'camera=(self), geolocation=()');
