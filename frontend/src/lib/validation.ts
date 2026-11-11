@@ -1,11 +1,37 @@
 import { z } from 'zod';
+import { fr } from 'zod/locales';
 import { differenceInYears, isAfter, startOfDay } from 'date-fns';
 
 /**
  * Validation temps reel du formulaire (miroir des regles serveur
  * `declarations.validation.ts`). Le serveur reste l'autorite.
  */
-const requis = (lib: string) => z.string({ required_error: `${lib} est obligatoire` }).trim().min(1, `${lib} est obligatoire`);
+
+// Messages par defaut de zod en francais : les controles sans message explicite
+// (longueurs, bornes, valeur d'enumeration inconnue) sont des libelles
+// d'interface, ils ne peuvent pas rester en anglais.
+z.config(fr());
+
+/**
+ * Une enumeration doit distinguer l'absence de choix de la valeur inconnue.
+ * zod 4 applique `error` aux deux : on ne renseigne donc que le premier cas et
+ * on rend `undefined` pour le second, ce qui laisse le message de la locale.
+ */
+const choix = <T extends readonly [string, ...string[]]>(valeurs: T, lib: string) =>
+  z.enum(valeurs, { error: absent(`${lib} obligatoire`) });
+/**
+ * zod 4 a fusionne `required_error` et `invalid_type_error` dans `error`, mais
+ * un `error` pose sur le schema sert aussi de repli a **tous** ses controles
+ * sans message propre : une chaine de 101 caracteres annoncerait « est
+ * obligatoire » au lieu d'une erreur de longueur. On ne traite donc que
+ * l'absence de valeur, et on rend `undefined` ailleurs pour laisser parler la
+ * locale.
+ */
+const absent = (message: string) => (probleme: { input: unknown }) =>
+  probleme.input === undefined ? message : undefined;
+
+const requis = (lib: string) =>
+  z.string({ error: absent(`${lib} est obligatoire`) }).trim().min(1, `${lib} est obligatoire`);
 const dateIso = (lib: string) => requis(lib).regex(/^\d{4}-\d{2}-\d{2}$/, 'Format attendu : AAAA-MM-JJ');
 const pasFutur = (lib: string) => dateIso(lib).refine((v) => !isAfter(startOfDay(new Date(v)), startOfDay(new Date())), `${lib} ne peut pas etre dans le futur`);
 
@@ -27,13 +53,28 @@ const prefixer = (p: 'pere' | 'mere', o: ReturnType<typeof parent>) =>
 export const etapeEnfant = z.object({
   enfantNom: requis("Nom de l'enfant").max(100),
   enfantPrenoms: requis("Prenom(s) de l'enfant").max(150),
-  enfantSexe: z.enum(['MASCULIN', 'FEMININ'], { required_error: 'Sexe obligatoire' }),
+  enfantSexe: choix(['MASCULIN', 'FEMININ'], 'Sexe'),
   enfantDateNaissance: pasFutur('La date de naissance'),
   enfantHeureNaissance: requis('Heure de naissance').regex(/^([01]\d|2[0-3]):[0-5]\d$/, 'Format HH:MM'),
-  modeAccouchement: z.enum(['VOIE_BASSE', 'CESARIENNE'], { required_error: "Mode d'accouchement obligatoire" }),
-  termeGrossesse: z.enum(['A_TERME', 'PREMATURE'], { required_error: 'Terme obligatoire' }),
+  modeAccouchement: choix(['VOIE_BASSE', 'CESARIENNE'], "Mode d'accouchement"),
+  termeGrossesse: choix(['A_TERME', 'PREMATURE'], 'Terme'),
   moisGrossesse: z.coerce.number().int().min(4).max(8).optional(),
-  poidsNaissanceGrammes: z.coerce.number({ invalid_type_error: 'Poids obligatoire' }).int().min(300, 'Poids minimal 300 g').max(8000, 'Poids maximal 8000 g'),
+  // `z.coerce.number()` transforme une valeur absente ou vide en NaN : le repli
+  // porte donc sur ces formes, et non sur `undefined` seul. Un nombre bien forme
+  // mais non entier garde le message de la locale.
+  poidsNaissanceGrammes: z.coerce
+    .number({
+      error: (probleme) =>
+        probleme.input === undefined ||
+        probleme.input === null ||
+        probleme.input === '' ||
+        (typeof probleme.input === 'number' && Number.isNaN(probleme.input))
+          ? 'Poids obligatoire'
+          : undefined,
+    })
+    .int()
+    .min(300, 'Poids minimal 300 g')
+    .max(8000, 'Poids maximal 8000 g'),
 }).refine((d) => d.termeGrossesse !== 'PREMATURE' || !!d.moisGrossesse, { message: 'Nombre de mois obligatoire pour un premature', path: ['moisGrossesse'] });
 
 export const etapePere = z.object(prefixer('pere', parent('Pere')) as Record<`pere${keyof ReturnType<typeof parent>}`, z.ZodString>);
