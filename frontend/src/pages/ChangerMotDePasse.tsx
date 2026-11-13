@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { api } from '../lib/api';
 import { useAuth } from '../lib/auth';
 import { Alerte } from '../components/ui';
+import { ChampMotDePasse } from '../components/ChampMotDePasse';
 import { AIDE_MOT_DE_PASSE, defautsMotDePasse, erreurMotDePasse } from '../lib/mot-de-passe';
 
 export default function ChangerMotDePasse() {
@@ -34,13 +35,13 @@ export default function ChangerMotDePasse() {
       <form onSubmit={soumettre} className="card space-y-4">
         {erreur && <Alerte type="erreur">{erreur}</Alerte>}
         {ok && <Alerte type="succes">Mot de passe modifié. Reconnexion…</Alerte>}
-        <div><label>Mot de passe actuel</label><input className="input" type="password" value={ancien} onChange={(e) => setAncien(e.target.value)} required /></div>
-        <div><label>Nouveau mot de passe</label><input className="input" type="password" autoComplete="new-password" value={nouveau} onChange={(e) => setNouveau(e.target.value)} required />
+        <div><label htmlFor="ancien">Mot de passe actuel</label><ChampMotDePasse id="ancien" autoComplete="current-password" value={ancien} onChange={(e) => setAncien(e.target.value)} required /></div>
+        <div><label htmlFor="nouveau">Nouveau mot de passe</label><ChampMotDePasse id="nouveau" autoComplete="new-password" value={nouveau} onChange={(e) => setNouveau(e.target.value)} required />
           <p className={`mt-1 text-xs ${nouveau && defautsMotDePasse(nouveau).length ? 'text-amber-700' : 'text-gray-500'}`}>
             {nouveau && defautsMotDePasse(nouveau).length ? `Il manque : ${defautsMotDePasse(nouveau).join(', ')}.` : AIDE_MOT_DE_PASSE}
           </p>
         </div>
-        <div><label>Confirmation</label><input className="input" type="password" value={confirmation} onChange={(e) => setConfirmation(e.target.value)} required /></div>
+        <div><label htmlFor="confirmation">Confirmation</label><ChampMotDePasse id="confirmation" autoComplete="new-password" value={confirmation} onChange={(e) => setConfirmation(e.target.value)} required /></div>
         <button className="btn-primary w-full">Enregistrer</button>
       </form>
     </div>

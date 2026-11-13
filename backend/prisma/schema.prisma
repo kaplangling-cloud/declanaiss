@@ -288,8 +288,9 @@ model User {
   centre Centre? @relation(fields: [centreId], references: [id])
   mairie Mairie? @relation(fields: [mairieId], references: [id])
 
-  personnelSante PersonnelSante?
-  refreshTokens  RefreshToken[]
+  personnelSante   PersonnelSante?
+  refreshTokens    RefreshToken[]
+  jetonsMotDePasse JetonMotDePasse[]
 
   declarationsCreees      Declaration[]   @relation("DeclarationCreateur")
   declarationsSoumises    Declaration[]   @relation("DeclarationSoumetteur")
@@ -303,6 +304,27 @@ model User {
   @@index([centreId])
   @@index([mairieId])
   @@map("utilisateurs")
+}
+
+/// Jeton de reinitialisation de mot de passe envoye par courriel.
+/// Comme pour les refresh tokens, seul le SHA-256 est conserve : une fuite de
+/// la base ne permet pas de fabriquer un lien valide. Duree de vie courte,
+/// usage unique, et toute demande ulterieure revoque les jetons en attente.
+model JetonMotDePasse {
+  id        String    @id @default(uuid())
+  userId    String
+  tokenHash String    @unique // SHA-256 du jeton (jamais stocke en clair)
+  expireLe  DateTime
+  utiliseLe DateTime? // consomme par une reinitialisation reussie
+  revoqueLe DateTime? // invalide par une demande plus recente ou un changement de mot de passe
+  ip        String?
+  userAgent String?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@map("jetons_mot_de_passe")
 }
 
 model RefreshToken {

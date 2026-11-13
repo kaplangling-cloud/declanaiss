@@ -2,7 +2,7 @@ import { BadRequestException, Body, Controller, Get, HttpCode, Post } from '@nes
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
-import { ChangerMotDePasseDto, LoginDto, RefreshDto } from './dto/auth.dto';
+import { ChangerMotDePasseDto, LoginDto, MotDePasseOublieDto, RefreshDto, ReinitialiserMotDePasseDto } from './dto/auth.dto';
 import { ContexteRequete, CurrentUser, Public, RequestContext, UtilisateurCourant } from '../common/decorators';
 
 @ApiTags('auth')
@@ -26,6 +26,27 @@ export class AuthController {
   @HttpCode(200)
   refresh(@Body() dto: RefreshDto, @RequestContext() ctx: ContexteRequete) {
     return this.auth.refresh(dto.refreshToken, ctx);
+  }
+
+  /**
+   * Demande d'un lien de reinitialisation. Quota serre : la route revele, par
+   * son seul usage repete, qu'on cherche des comptes, et chaque appel declenche
+   * l'envoi d'un courriel.
+   */
+  @Public()
+  @Throttle({ default: { limit: 5, ttl: 60_000 } })
+  @Post('mot-de-passe-oublie')
+  @HttpCode(200)
+  motDePasseOublie(@Body() dto: MotDePasseOublieDto, @RequestContext() ctx: ContexteRequete) {
+    return this.auth.demanderReinitialisation(dto.identifiant, ctx);
+  }
+
+  @Public()
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
+  @Post('reinitialiser-mot-de-passe')
+  @HttpCode(200)
+  reinitialiserMotDePasse(@Body() dto: ReinitialiserMotDePasseDto, @RequestContext() ctx: ContexteRequete) {
+    return this.auth.reinitialiserMotDePasse(dto.jeton, dto.nouveauMotDePasse, ctx);
   }
 
   @ApiBearerAuth()

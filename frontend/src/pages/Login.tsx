@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react';
 import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { useAuth } from '../lib/auth';
 import { Alerte } from '../components/ui';
+import { ChampMotDePasse } from '../components/ChampMotDePasse';
 
 export default function Login() {
   const { utilisateur, connecter } = useAuth();
@@ -31,8 +32,14 @@ export default function Login() {
         <form onSubmit={soumettre} className="card space-y-4">
           {erreur && <Alerte type="erreur">{erreur}</Alerte>}
           {!navigator.onLine && <Alerte type="avert">Vous êtes hors ligne : la connexion nécessite le réseau. Une session déjà ouverte reste utilisable.</Alerte>}
-          <div><label>Adresse e-mail ou nom d'utilisateur</label><input className="input" type="text" autoComplete="username" autoCapitalize="none" spellCheck={false} value={identifiant} onChange={(e) => setIdentifiant(e.target.value)} required /></div>
-          <div><label>Mot de passe</label><input className="input" type="password" autoComplete="current-password" value={motDePasse} onChange={(e) => setMotDePasse(e.target.value)} required /></div>
+          <div><label htmlFor="identifiant">Adresse e-mail ou nom d'utilisateur</label><input id="identifiant" className="input" type="text" autoComplete="username" autoCapitalize="none" spellCheck={false} value={identifiant} onChange={(e) => setIdentifiant(e.target.value)} required /></div>
+          <div>
+            <label htmlFor="motDePasse">Mot de passe</label>
+            <ChampMotDePasse id="motDePasse" autoComplete="current-password" value={motDePasse} onChange={(e) => setMotDePasse(e.target.value)} required />
+            <p className="mt-2 text-right text-xs">
+              <Link to="/mot-de-passe-oublie" className="text-primary-700 underline">Mot de passe oublié ?</Link>
+            </p>
+          </div>
           <button className="btn-primary w-full" disabled={enCours}>{enCours ? 'Connexion…' : 'Se connecter'}</button>
         </form>
         <p className="mt-4 text-center text-xs text-gray-500">

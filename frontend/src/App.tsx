@@ -4,6 +4,8 @@ import { Layout } from './components/Layout';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import Login from './pages/Login';
 import VerifierPublic from './pages/VerifierPublic';
+import MotDePasseOublie from './pages/MotDePasseOublie';
+import ReinitialiserMotDePasse from './pages/ReinitialiserMotDePasse';
 import ChangerMotDePasse from './pages/ChangerMotDePasse';
 import CentreDashboard from './pages/centre/Dashboard';
 import DeclarationForm from './pages/centre/DeclarationForm';
@@ -33,6 +35,8 @@ export default function App() {
   return (
     <Routes>
       <Route path="/connexion" element={<Login />} />
+      <Route path="/mot-de-passe-oublie" element={<MotDePasseOublie />} />
+      <Route path="/reinitialiser" element={<ReinitialiserMotDePasse />} />
       <Route path="/verifier" element={<VerifierPublic />} />
       <Route path="/verifier/:reference" element={<VerifierPublic />} />
 

@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../lib/api';
 import { LIBELLE_ROLE, useAuth } from '../../lib/auth';
 import { Alerte, Modale, fmtDate } from '../../components/ui';
+import { ChampMotDePasse } from '../../components/ChampMotDePasse';
 import { AIDE_MOT_DE_PASSE, erreurMotDePasse } from '../../lib/mot-de-passe';
 import { FONCTIONS_PERSONNEL, type Role } from '../../types';
 
@@ -177,7 +178,7 @@ export default function Utilisateurs() {
               <div><label>E-mail (login)</label><input name="email" type="email" className="input" required /></div>
             </div>
             <p className="-mt-1 text-xs text-gray-500">{AIDE_NOM_UTILISATEUR} Le nom d'utilisateur est proposé à partir du prénom et du nom ; il reste modifiable.</p>
-            <div><label>Mot de passe initial (à changer à la 1ʳᵉ connexion)</label><input name="motDePasse" type="password" className="input" required autoComplete="new-password" />
+            <div><label htmlFor="motDePasseInitial">Mot de passe initial (à changer à la 1ʳᵉ connexion)</label><ChampMotDePasse id="motDePasseInitial" name="motDePasse" required autoComplete="new-password" />
               <p className="mt-1 text-xs text-gray-500">{AIDE_MOT_DE_PASSE}</p></div>
             {selecteurRole()}
             {selecteurRattachement()}
@@ -200,7 +201,7 @@ export default function Utilisateurs() {
             {selecteurRole()}
             {selecteurRattachement({ centreId: edite.centreId, mairieId: edite.mairieId })}
             {selecteurFonction({ actuelle: edite.personnelSante?.fonction })}
-            <div><label>Nouveau mot de passe (facultatif)</label><input name="motDePasse" type="password" className="input" autoComplete="new-password" placeholder="Laisser vide pour ne pas le changer" />
+            <div><label htmlFor="motDePasseNouveau">Nouveau mot de passe (facultatif)</label><ChampMotDePasse id="motDePasseNouveau" name="motDePasse" autoComplete="new-password" placeholder="Laisser vide pour ne pas le changer" />
               <p className="mt-1 text-xs text-gray-500">{AIDE_MOT_DE_PASSE} Réinitialiser ferme toutes les sessions du compte ; le nouveau mot de passe devra être changé à la connexion suivante.</p></div>
             {edite.id === moi?.id && role !== edite.role && <Alerte type="avert">Vous modifiez votre propre rôle : vous perdrez l'accès à cet écran.</Alerte>}
             <div className="flex justify-end gap-2"><button type="button" className="btn-secondary" onClick={fermer}>Annuler</button><button className="btn-primary" disabled={modifier.isPending}>Enregistrer</button></div>

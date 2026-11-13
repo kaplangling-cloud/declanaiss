@@ -75,6 +75,22 @@ services:
         value: "0 * * * *"
       - key: MAX_UPLOAD_SIZE_MB
         value: "8"
+      # Envoi des courriels (reinitialisation de mot de passe). Facultatif :
+      # tant que SMTP_USER et SMTP_PASSWORD sont vides, l'API demarre
+      # normalement et la route /auth/mot-de-passe-oublie repond 503.
+      # Port 465 : TLS implicite ; sur 587, mettre SMTP_SECURE a false.
+      - key: SMTP_HOST
+        sync: false
+      - key: SMTP_PORT
+        value: "465"
+      - key: SMTP_SECURE
+        value: "true"
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASSWORD
+        sync: false
+      - key: SMTP_FROM
+        sync: false
 
   - type: web
     name: declanaiss-web

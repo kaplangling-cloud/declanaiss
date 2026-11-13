@@ -25,3 +25,15 @@ export class ChangerMotDePasseDto {
   @ApiProperty() @IsString() @IsNotEmpty() ancienMotDePasse!: string;
   @ApiProperty({ minLength: 8, description: MESSAGE_MOT_DE_PASSE }) @IsString() @EstMotDePasseRobuste() nouveauMotDePasse!: string;
 }
+
+export class MotDePasseOublieDto {
+  /** Adresse e-mail ou nom d'utilisateur : le message part vers l'adresse du compte. */
+  @ApiProperty({ description: "Adresse e-mail ou nom d'utilisateur du compte" })
+  @IsString() @IsNotEmpty() @MaxLength(254) identifiant!: string;
+}
+
+export class ReinitialiserMotDePasseDto {
+  /** Jeton a usage unique recu par courriel. */
+  @ApiProperty() @IsString() @IsNotEmpty() @MaxLength(200) jeton!: string;
+  @ApiProperty({ minLength: 8, description: MESSAGE_MOT_DE_PASSE }) @IsString() @EstMotDePasseRobuste() nouveauMotDePasse!: string;
+}

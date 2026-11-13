@@ -103,6 +103,14 @@ BLIND_INDEX_KEY=<openssl rand -base64 32>
 FRONTEND_DIST=./public
 STORAGE_ROOT=/home/<utilisateur>/declanaiss-storage
 TRUST_PROXY_HOPS=<à vérifier, voir ci-dessous>
+
+# Facultatif : envoi des courriels (réinitialisation de mot de passe)
+SMTP_HOST=
+SMTP_PORT=465
+SMTP_SECURE=true
+SMTP_USER=
+SMTP_PASSWORD=
+SMTP_FROM=
 ```
 
 Deux points méritent attention.
@@ -112,6 +120,37 @@ du site : des pièces jointes rangées dedans disparaîtraient à la mise à jou
 
 **`DATA_ENCRYPTION_KEY` est irremplaçable.** La perdre rend les numéros de CNI et les
 pièces jointes définitivement illisibles. La conserver hors de la plateforme.
+
+### Envoi des courriels (réinitialisation de mot de passe)
+
+La réinitialisation de mot de passe par e-mail a besoin d'un serveur SMTP. Les variables
+sont **facultatives** : sans elles l'API démarre normalement, mais la route répond 503 et
+il ne reste que la réinitialisation par un administrateur depuis l'écran *Comptes*.
+
+Hostinger fournit une messagerie avec l'hébergement. Créer une boîte dans
+hPanel → **E-mails** (par exemple `ne-pas-repondre@votre-domaine`), puis :
+
+```
+SMTP_HOST=smtp.hostinger.com
+SMTP_PORT=465
+SMTP_SECURE=true
+SMTP_USER=ne-pas-repondre@votre-domaine
+SMTP_PASSWORD=<mot de passe de la boîte>
+SMTP_FROM=ne-pas-repondre@votre-domaine
+```
+
+Trois points comptent :
+
+- `SMTP_FROM` doit appartenir au domaine authentifié. Une adresse d'un autre domaine part
+  en courrier indésirable, voire est rejetée.
+- Le port 465 utilise un TLS implicite (`SMTP_SECURE=true`). Sur le port 587, c'est
+  STARTTLS : mettre `SMTP_SECURE=false`.
+- Les enregistrements **SPF et DKIM** du domaine doivent être en place (Hostinger les pose
+  à la création de la boîte) ; sans eux, les messages arrivent mal, et le lien de
+  réinitialisation donne l'impression de ne jamais partir.
+
+Après avoir renseigné ces variables, redémarrer l'application : elles sont lues au
+démarrage du processus.
 
 ### Vérifier `TRUST_PROXY_HOPS`
 
